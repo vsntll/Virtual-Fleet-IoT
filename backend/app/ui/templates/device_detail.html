@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Device {{ device.id }}</title>
+    <link rel="stylesheet" href="/static/main.css">
+</head>
+<body>
+    {% if device %}
+    <h1>Device Details: {{ device.id }}</h1>
+    <p><strong>Status:</strong> {{ device.status }}</p>
+    <p><strong>Current Version:</strong> {{ device.current_version }}</p>
+    <p><strong>Desired Version:</strong> {{ device.desired_version }}</p>
+    <p><strong>Last Seen:</strong> {{ device.last_seen }}</p>
+
+    <h2>Recent Measurements</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Temperature</th>
+                <th>Humidity</th>
+                <th>Battery</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in measurements %}
+            <tr>
+                <td>{{ m.timestamp }}</td>
+                <td>{{ m.temp }}</td>
+                <td>{{ m.humidity }}</td>
+                <td>{{ m.battery }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <h1>Device not found</h1>
+    {% endif %}
+    <br>
+    <a href="/">Back to Fleet</a>
+</body>
+</html>

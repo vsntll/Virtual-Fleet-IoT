@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Virtual Fleet</title>
+    <link rel="stylesheet" href="/static/main.css">
+</head>
+<body>
+    <h1>Device Fleet</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Device ID</th>
+                <th>Status</th>
+                <th>Current Version</th>
+                <th>Desired Version</th>
+                <th>Last Seen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for device in devices %}
+            <tr>
+                <td><a href="/devices/{{ device.id }}">{{ device.id }}</a></td>
+                <td>{{ device.status }}</td>
+                <td>{{ device.current_version }}</td>
+                <td>{{ device.desired_version }}</td>
+                <td>{{ device.last_seen }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
