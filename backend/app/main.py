@@ -10,7 +10,7 @@ from .ui import views
 app = FastAPI(title="Virtual Fleet Backend")
 
 # Mount static files
-app.mount("/static", StaticFiles(directory="backend/app/ui/static"), name="static")
+app.mount("/static", StaticFiles(directory="app/ui/static"), name="static")
 
 # Include API routers
 app.include_router(devices.router, prefix="/api/devices", tags=["devices"])
