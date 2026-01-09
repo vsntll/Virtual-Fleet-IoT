@@ -27,10 +27,16 @@ services:
     environment:
       - BACKEND_URL=http://backend:8000
       - RUST_LOG=info
+      - CONFIG_DIR=/usr/src/app/config_dir
     networks:
       - fleet-net
     restart: always
+    volumes:
+      - device_config_data:/usr/src/app/config_dir
 
 networks:
   fleet-net:
     driver: bridge
+
+volumes:
+  device_config_data: # Define a named volume

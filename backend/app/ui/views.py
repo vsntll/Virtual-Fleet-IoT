@@ -5,9 +5,12 @@ from sqlalchemy.orm import Session
 import json # Import json for parsing/serializing
 import httpx # Import httpx for making HTTP requests
 from typing import Optional
+import logging # Import logging
 
 from .. import models
 from ..database import get_db
+
+logger = logging.getLogger(__name__) # Initialize logger
 
 router = APIRouter()
 
@@ -176,11 +179,11 @@ async def map_view(request: Request, db: Session = Depends(get_db)):
 
     for device in devices:
         # Get the latest measurement with location data for each device
-        latest_measurement = db.query(models.Measurement)
-            .filter(models.Measurement.device_id == device.id)
-            .filter(models.Measurement.latitude.isnot(None), models.Measurement.longitude.isnot(None))
-            .order_by(models.Measurement.timestamp.desc())
-            .first()
+        latest_measurement = db.query(models.Measurement).filter(
+            models.Measurement.device_id == device.id,
+            models.Measurement.latitude.isnot(None),
+            models.Measurement.longitude.isnot(None)
+        ).order_by(models.Measurement.timestamp.desc()).first()
 
         if latest_measurement:
             devices_data.append({
@@ -192,6 +195,7 @@ async def map_view(request: Request, db: Session = Depends(get_db)):
                 "environment": device.environment,
             })
     
+    logger.debug(f"Devices data for map: {devices_data}") # DEBUG LOG
     return templates.TemplateResponse("map_view.html", {
         "request": request,
         "devices_data": devices_data

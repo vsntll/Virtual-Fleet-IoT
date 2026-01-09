@@ -11,17 +11,16 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../b
 
 from app import models
 
-# Database setup (copying from backend/app/database.py, but adjusting path for tools)
-# Adjust the database URL to point to the correct location for the tools
-# Assuming the tools run from the project root or similar.
-# If running from 'tools' directory, '../backend/fleet.db' or '../test.db'
-# For now, let's assume it should target the main backend database.
+# Determine the project root dynamically
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+db_path = os.path.join(project_root, 'backend', 'fleet.db')
 
+# Global DATABASE_URL and session setup
+DATABASE_URL = f"sqlite:///{db_path}"
 engine = create_engine(
     DATABASE_URL, connect_args={"check_same_thread": False}
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-# Base = declarative_base() # Re-declare Base, or import if possible. If Base is always the same, we can import from models
 
 def get_db():
     db = SessionLocal()
@@ -34,6 +33,7 @@ def compute_metrics_and_alerts():
     db_gen = get_db()
     db = next(db_gen) # Get the session object from the generator
 
+    print(f"Using database: {DATABASE_URL}")
     print("Computing metrics and evaluating alerts...")
 
     try:
@@ -151,39 +151,4 @@ def compute_metrics_and_alerts():
         db.close()
 
 if __name__ == "__main__":
-    # Ensure all models are loaded for Alembic's Base to know them
-    # from app import models # This line is already handled by the sys.path.insert and direct import
-
-    # Determine the project root dynamically
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-    db_path = os.path.join(project_root, 'backend', 'fleet.db')
-    
-    # Adjust DATABASE_URL dynamically
-    DATABASE_URL = f"sqlite:///{db_path}"
-    engine = create_engine(
-        DATABASE_URL, connect_args={"check_same_thread": False}
-    )
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    
-    print(f"Using database: {DATABASE_URL}")
-    
     compute_metrics_and_alerts()
-
-if __name__ == "__main__":
-    # Ensure all models are loaded for Alembic's Base to know them
-    # from app import models # This line is already handled by the sys.path.insert and direct import
-
-    # Determine the project root dynamically
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-    db_path = os.path.join(project_root, 'backend', 'fleet.db')
-    
-    # Adjust DATABASE_URL dynamically
-    DATABASE_URL = f"sqlite:///{db_path}"
-    engine = create_engine(
-        DATABASE_URL, connect_args={"check_same_thread": False}
-    )
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    
-    print(f"Using database: {DATABASE_URL}")
-    
-    compute_failure_rates()

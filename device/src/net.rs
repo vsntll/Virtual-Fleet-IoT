@@ -37,10 +37,11 @@ pub async fn send_heartbeat(
     };
 
     let auth_token = config.auth_token.as_ref().ok_or_else(|| anyhow::anyhow!("Auth token not found"))?;
+    debug!(device_id = %config.device_id, auth_token = %auth_token, "Sending heartbeat with auth token"); // Debug log
 
     debug!(device_id = %config.device_id, "Sending heartbeat");
     let desired_state = client.post(&url)
-        .header("Authorization", auth_token)
+        .header("X-Auth-Token", auth_token) // Changed header name
         .json(&body)
         .send().await?.error_for_status()?.json::<DesiredState>().await?;
     info!(device_id = %config.device_id, "Heartbeat sent successfully, desired state received.");
@@ -60,9 +61,10 @@ pub async fn send_ingest(client: &Client, config: &Config, measurements: &[crate
     };
 
     let auth_token = config.auth_token.as_ref().ok_or_else(|| anyhow::anyhow!("Auth token not found"))?;
+    debug!(device_id = %config.device_id, auth_token = %auth_token, "Sending ingest with auth token"); // Debug log
 
     client.post(&url)
-        .header("Authorization", auth_token)
+        .header("X-Auth-Token", auth_token) // Changed header name
         .json(&body)
         .send().await?.error_for_status()?;
     info!(device_id = %config.device_id, count = measurements.len(), "Ingested measurements.");
@@ -73,10 +75,11 @@ pub async fn fetch_latest_firmware(client: &Client, config: &Config) -> Result<O
     let url = format!("{}/api/firmware/latest?device_id={}", config.backend_url, config.device_id);
     
     let auth_token = config.auth_token.as_ref().ok_or_else(|| anyhow::anyhow!("Auth token not found"))?;
+    debug!(device_id = %config.device_id, auth_token = %auth_token, "Fetching latest firmware with auth token"); // Debug log
 
     debug!(device_id = %config.device_id, "Fetching latest firmware");
     let response = client.get(&url)
-        .header("Authorization", auth_token)
+        .header("X-Auth-Token", auth_token) // Changed header name
         .send().await?;
     
     if response.status() == reqwest::StatusCode::NO_CONTENT {
@@ -98,8 +101,10 @@ pub async fn fetch_latest_firmware(client: &Client, config: &Config) -> Result<O
 pub async fn download_firmware(client: &Client, config: &Config, firmware_url: &str) -> Result<Vec<u8>> {
     info!(device_id = %config.device_id, url = %firmware_url, "Downloading firmware");
     let auth_token = config.auth_token.as_ref().ok_or_else(|| anyhow::anyhow!("Auth token not found"))?;
+    debug!(device_id = %config.device_id, auth_token = %auth_token, "Downloading firmware with auth token"); // Debug log
+
     let response = client.get(firmware_url)
-        .header("Authorization", auth_token)
+        .header("X-Auth-Token", auth_token) // Changed header name
         .send().await?;
     let bytes = response.error_for_status()?.bytes().await?.to_vec();
     info!(device_id = %config.device_id, bytes = bytes.len(), "Firmware downloaded successfully");
@@ -109,10 +114,11 @@ pub async fn download_firmware(client: &Client, config: &Config, firmware_url: &
 pub async fn fetch_device_shadow(client: &Client, config: &Config) -> Result<DeviceShadow> {
     let url = format!("{}/api/devices/{}/shadow", config.backend_url, config.device_id);
     let auth_token = config.auth_token.as_ref().ok_or_else(|| anyhow::anyhow!("Auth token not found"))?;
+    debug!(device_id = %config.device_id, auth_token = %auth_token, "Fetching device shadow with auth token"); // Debug log
 
     debug!(device_id = %config.device_id, "Fetching device shadow");
     let shadow = client.get(&url)
-        .header("Authorization", auth_token)
+        .header("X-Auth-Token", auth_token) // Changed header name
         .send().await?.error_for_status()?.json::<DeviceShadow>().await?;
     debug!(device_id = %config.device_id, ?shadow, "Fetched device shadow");
     Ok(shadow)
@@ -121,10 +127,11 @@ pub async fn fetch_device_shadow(client: &Client, config: &Config) -> Result<Dev
 pub async fn report_device_shadow(client: &Client, config: &Config, reported_state: ReportedShadowState) -> Result<()> {
     let url = format!("{}/api/devices/{}/shadow", config.backend_url, config.device_id);
     let auth_token = config.auth_token.as_ref().ok_or_else(|| anyhow::anyhow!("Auth token not found"))?;
+    debug!(device_id = %config.device_id, auth_token = %auth_token, "Reporting device shadow state with auth token"); // Debug log
 
     debug!(device_id = %config.device_id, ?reported_state, "Reporting device shadow state");
     client.patch(&url)
-        .header("Authorization", auth_token)
+        .header("X-Auth-Token", auth_token) // Changed header name
         .json(&reported_state)
         .send().await?.error_for_status()?;
     info!(device_id = %config.device_id, "Reported device shadow state.");

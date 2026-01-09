@@ -5,6 +5,7 @@ use std::fs;
 use std::io::{self, Write};
 use uuid::Uuid;
 use serde_json::Value; // Import Value for chaos_flags
+use std::path::PathBuf; // Import PathBuf
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Config {
@@ -52,17 +53,26 @@ impl Config {
         })
     }
 
-    const CONFIG_FILE: &str = "device_config.json";
+    fn get_config_file_path() -> PathBuf {
+        let config_dir = env::var("CONFIG_DIR").unwrap_or_else(|_| ".".to_string());
+        PathBuf::from(config_dir).join("device_config.json")
+    }
 
     pub fn load_from_file() -> Result<Self> {
-        let contents = fs::read_to_string(Self::CONFIG_FILE)?;
+        let config_file_path = Self::get_config_file_path();
+        let contents = fs::read_to_string(&config_file_path)?;
         let config: Config = serde_json::from_str(&contents)?;
         Ok(config)
     }
 
     pub fn save_to_file(&self) -> Result<()> {
+        let config_file_path = Self::get_config_file_path();
+        // Ensure the directory exists
+        if let Some(parent) = config_file_path.parent() {
+            fs::create_dir_all(parent)?;
+        }
         let contents = serde_json::to_string_pretty(self)?;
-        let mut file = fs::File::create(Self::CONFIG_FILE)?;
+        let mut file = fs::File::create(&config_file_path)?;
         file.write_all(contents.as_bytes())?;
         Ok(())
     }

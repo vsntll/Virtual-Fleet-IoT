@@ -12,6 +12,7 @@ pub struct Measurement {
     pub latitude: Option<f32>,
     pub longitude: Option<f32>,
     pub speed: Option<f32>,
+    pub firmware_version: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

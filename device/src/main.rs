@@ -83,14 +83,14 @@ async fn main() -> Result<()> {
     let mut shadow_check_interval = time::interval(Duration::from_secs(shadow_check_interval_secs));
 
     // Initialize current reported state based on config
-    let mut current_reported_state = config.reported_shadow_state.unwrap_or_else(|| json!({}));
+    let mut current_reported_state = config.reported_shadow_state.clone().unwrap_or_else(|| json!({})); // Added clone()
 
     loop {
         tokio::select! {
             _ = sample_interval.tick() => {
-                let measurement = simulate::generate_measurement();
+                let mut measurement = simulate::generate_measurement(ota_state.current_version.clone()); // Pass firmware_version
                 info!(device_id = %config.device_id, "Generated measurement: {:?}", measurement);
-                if let Err(e) = storage::append_measurement(&conn, &measurement, &config.device_id).await { // Pass device_id
+                if let Err(e) = storage::append_measurement(&conn, &measurement) { // No await here
                     error!(device_id = %config.device_id, error = %e, "Failed to store measurement");
                 }
             }
@@ -114,7 +114,7 @@ async fn main() -> Result<()> {
                 }
                 // --- END CHAOS ---
 
-                match storage::get_and_clear_measurements(&mut conn, 100).await { // Await storage ops
+                match storage::get_and_clear_measurements(&mut conn, 100) { // No await here
                     Ok(measurements) => {
                         if !measurements.is_empty() {
                             info!(device_id = %config.device_id, count = measurements.len(), "Uploading measurements");
@@ -122,7 +122,7 @@ async fn main() -> Result<()> {
                                 error!(device_id = %config.device_id, error = %e, "Failed to ingest measurements. Re-inserting into db.");
                                 // simplified error handling: just put them back.
                                 for m in measurements {
-                                    if let Err(e_reinsert) = storage::append_measurement(&conn, &m, &config.device_id).await { // Pass device_id
+                                    if let Err(e_reinsert) = storage::append_measurement(&conn, &m) { // No await here
                                         error!(device_id = %config.device_id, error = %e_reinsert, "Failed to re-insert measurement");
                                     }
                                 }

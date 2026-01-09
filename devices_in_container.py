@@ -17,19 +17,12 @@ logger = logging.getLogger(__name__)
 
 # --- Authentication Dependency ---
 async def authenticate_device(
-    auth_token: Optional[str] = Header(None, alias="X-Auth-Token"),
+    auth_token: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ) -> models.Device:
-    logger.debug(f"Raw auth_token received by dependency: {auth_token}") # NEW DEBUG LOG
     if auth_token is None:
         logger.warning("Authentication failed: Authorization header missing")
         raise HTTPException(status_code=401, detail="Authorization header missing")
-
-    # Add debug logging for the received auth_token
-    logger.debug(f"Received auth_token: '{auth_token}'")
-
-    # Strip any whitespace from the received auth_token
-    auth_token = auth_token.strip()
 
     device = db.query(models.Device).filter(models.Device.auth_token == auth_token).first()
     if not device:
@@ -103,34 +96,6 @@ class IngestPayload(BaseModel):
     device_id: str
     measurements: List[MeasurementPayload]
 
-# Pydantic model for Device output (mirroring models.Device SQLAlchemy model)
-class DeviceOutput(BaseModel):
-    id: str
-    current_version: Optional[str]
-    desired_version: Optional[str]
-    last_seen: datetime.datetime
-    status: str
-    rollout_bucket: int
-    environment: str
-    region: Optional[str]
-    hardware_rev: Optional[str]
-    reported_sample_interval_secs: int
-    reported_upload_interval_secs: int
-    reported_heartbeat_interval_secs: int
-    desired_sample_interval_secs: int
-    desired_upload_interval_secs: int
-    desired_heartbeat_interval_secs: int
-    desired_state: Optional[str] # JSON string
-    reported_state: Optional[str] # JSON string
-    config_flags: Optional[str] # JSON string
-    lifecycle_state: str
-    auth_token: Optional[str]
-    registered_at: Optional[datetime.datetime]
-    predicted_issue: Optional[str]
-
-    class Config:
-        from_attributes = True # Allow SQLAlchemy models to be passed directly
-
 # --- Generic Device Shadow Models ---
 
 class DeviceShadowPatchRequest(BaseModel):
@@ -140,9 +105,6 @@ class DeviceShadowPatchRequest(BaseModel):
 class DeviceShadowResponseGeneric(BaseModel):
     desired: Dict[str, Any]
     reported: Dict[str, Any]
-
-class TokenRotationResponse(BaseModel):
-    new_auth_token: uuid.UUID
 
 # --- API Endpoints ---
 
@@ -227,7 +189,7 @@ def heartbeat(
         desired_heartbeat_interval_secs=device.desired_heartbeat_interval_secs,
     )
 
-@router.post("/{device_id}/state", response_model=DeviceOutput)
+@router.post("/{device_id}/state", response_model=models.Device) # Assuming models.Device is a Pydantic model
 def update_device_state(
     device_id: str, 
     state: DeviceStatePayload, 
@@ -250,9 +212,9 @@ def update_device_state(
         "Device specific desired intervals updated", 
         extra={"device_id": device.id, "desired_sample_interval_secs": device.desired_sample_interval_secs}
     )
-    return DeviceOutput.from_orm(device)
+    return device
 
-@router.post("/{device_id}/environment", response_model=DeviceOutput)
+@router.post("/{device_id}/environment", response_model=models.Device) # Assuming models.Device is a Pydantic model
 def update_device_environment(
     device_id: str, 
     environment: DeviceEnvironmentPayload, 
@@ -272,7 +234,7 @@ def update_device_environment(
         "Device environment updated", 
         extra={"device_id": device.id, "new_environment": device.environment}
     )
-    return DeviceOutput.from_orm(device)
+    return device
 
 @router.post("/ingest", status_code=204)
 def ingest(payload: IngestPayload, authenticated_device: models.Device = Depends(authenticate_device), db: Session = Depends(get_db)):

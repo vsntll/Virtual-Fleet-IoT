@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean, text
 from sqlalchemy.orm import relationship
 from .database import Base
 import datetime
@@ -29,10 +29,9 @@ class Device(Base):
     desired_state = Column(String, nullable=True)
     reported_state = Column(String, nullable=True)
     config_flags = Column(String, nullable=True, default="{}")
-    lifecycle_state = Column(String, default="new", nullable=False) # new, active, suspended, decommissioned
+    lifecycle_state = Column(String, default="new", nullable=False, server_default="new") # Added server_default
     auth_token = Column(String, unique=True, nullable=True, index=True)
-    registered_at = Column(DateTime, nullable=True)
-    predicted_issue = Column(String, nullable=True)
+    registered_at = Column(DateTime, nullable=True, server_default=text("CURRENT_TIMESTAMP")) # Added server_default
 
     measurements = relationship("Measurement", back_populates="device")
     errors = relationship("DeviceError", back_populates="device")

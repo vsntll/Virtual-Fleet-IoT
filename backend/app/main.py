@@ -22,11 +22,11 @@ if not logger.handlers: # Avoid adding handlers multiple times if reloaded
     logger.addHandler(console_handler)
 
     # File handler
-    file_handler = logging.FileHandler('backend/app.log')
+    file_handler = logging.FileHandler('/tmp/app.log')
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
 
 app = FastAPI(title="Virtual Fleet Backend")
 

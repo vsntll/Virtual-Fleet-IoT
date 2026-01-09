@@ -34,6 +34,7 @@ def main():
     parser.add_argument("--required-region", help="Required device region for this firmware.")
     parser.add_argument("--required-hardware-rev", help="Required device hardware revision for this firmware.")
     parser.add_argument("--private-key", default="super-secret-key", help="Private key for signing firmware.")
+    parser.add_argument("--status", default="active", help="Rollout status (e.g., active, paused, rolled_back).")
     args = parser.parse_args()
 
     if not os.path.exists(args.file):
@@ -58,23 +59,30 @@ def main():
     cursor = conn.cursor()
 
     try:
+        # Check if firmware version already exists
+        cursor.execute("SELECT COUNT(*) FROM firmware WHERE version = ?", (args.version,))
+        exists = cursor.fetchone()[0]
+        if exists > 0:
+            print(f"Error: Firmware version {args.version} already exists. Skipping insertion.")
+            return
+
         cursor.execute(
             """
-            INSERT INTO firmware (version, checksum, url, rollout_group, rollout_phase, target_percent, required_region, required_hardware_rev, signature, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO firmware (version, checksum, url, rollout_group, rollout_phase, target_percent, required_region, required_hardware_rev, signature, rollout_status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (args.version, checksum, firmware_url, args.group, args.phase, args.percent, args.required_region, args.required_hardware_rev, signature, datetime.datetime.utcnow())
+            (args.version, checksum, firmware_url, args.group, args.phase, args.percent, args.required_region, args.required_hardware_rev, signature, args.status, datetime.datetime.utcnow())
         )
         conn.commit()
-        print(f"Successfully published firmware version {args.version} with group '{args.group}', phase '{args.phase}', target {args.percent}%.")
+        print(f"Successfully published firmware version {args.version} with group '{args.group}', phase '{args.phase}', target {args.percent}%, status '{args.status}'.")
         print(f"Signature: {signature}")
         if args.required_region:
             print(f"  Required region: {args.required_region}")
         if args.required_hardware_rev:
             print(f"  Required hardware revision: {args.required_hardware_rev}")
 
-    except sqlite3.IntegrityError:
-        print(f"Error: Firmware version {args.version} already exists.")
+    except Exception as e: # Catch all exceptions for debugging
+        print(f"An unexpected error occurred: {e}")
     finally:
         conn.close()
 

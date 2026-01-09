@@ -15,7 +15,7 @@ lazy_static! {
     static ref CURRENT_SPEED: Mutex<f32> = Mutex::new(0.0); // Initial speed
 }
 
-pub fn generate_measurement() -> Measurement {
+pub fn generate_measurement(firmware_version: String) -> Measurement {
     let sequence_number = SEQUENCE_COUNTER.fetch_add(1, Ordering::SeqCst);
     let mut rng = rand::thread_rng();
 
@@ -47,5 +47,6 @@ pub fn generate_measurement() -> Measurement {
         latitude: Some(*lat),
         longitude: Some(*lon),
         speed: Some(*speed),
+        firmware_version: Some(firmware_version),
     }
 }
