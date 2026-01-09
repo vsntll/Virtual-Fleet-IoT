@@ -2,7 +2,18 @@ use anyhow::Result;
 use reqwest::Client;
 
 use crate::config::Config;
-use crate::types::{FirmwareMetadata, Heartbeat, IngestPayload, DesiredState};
+use crate::types::{FirmwareMetadata, Heartbeat, IngestPayload, DesiredState, RegisterPayload, RegisterResponse}; // Added RegisterPayload, RegisterResponse
+use uuid::Uuid; // Added Uuid
+
+pub async fn register_device(client: &Client, backend_url: &str, boot_id: Uuid) -> Result<RegisterResponse> {
+    let url = format!("{}/api/devices/register", backend_url);
+    let body = RegisterPayload { boot_id };
+    
+    let response = client.post(&url).json(&body).send().await?.error_for_status()?;
+    let register_response = response.json::<RegisterResponse>().await?;
+    log::info!("Device registered successfully. Device ID: {}", register_response.device_id);
+    Ok(register_response)
+}
 
 pub async fn send_heartbeat(
     client: &Client, 
@@ -23,7 +34,12 @@ pub async fn send_heartbeat(
         hardware_rev: config.hardware_rev.clone(),
     };
 
-    let desired_state = client.post(&url).json(&body).send().await?.error_for_status()?.json::<DesiredState>().await?;
+    let auth_token = config.auth_token.as_ref().ok_or_else(|| anyhow::anyhow!("Auth token not found"))?;
+
+    let desired_state = client.post(&url)
+        .header("Authorization", auth_token)
+        .json(&body)
+        .send().await?.error_for_status()?.json::<DesiredState>().await?;
     log::info!("Heartbeat sent successfully, desired state received.");
     Ok(desired_state)
 }
@@ -39,7 +55,12 @@ pub async fn send_ingest(client: &Client, config: &Config, measurements: &[crate
         measurements: measurements.to_vec(),
     };
 
-    client.post(&url).json(&body).send().await?.error_for_status()?;
+    let auth_token = config.auth_token.as_ref().ok_or_else(|| anyhow::anyhow!("Auth token not found"))?;
+
+    client.post(&url)
+        .header("Authorization", auth_token)
+        .json(&body)
+        .send().await?.error_for_status()?;
     log::info!("Ingested {} measurements.", measurements.len());
     Ok(())
 }
@@ -47,7 +68,11 @@ pub async fn send_ingest(client: &Client, config: &Config, measurements: &[crate
 pub async fn fetch_latest_firmware(client: &Client, config: &Config) -> Result<Option<FirmwareMetadata>> {
     let url = format!("{}/api/firmware/latest?device_id={}", config.backend_url, config.device_id);
     
-    let response = client.get(&url).send().await?;
+    let auth_token = config.auth_token.as_ref().ok_or_else(|| anyhow::anyhow!("Auth token not found"))?;
+
+    let response = client.get(&url)
+        .header("Authorization", auth_token)
+        .send().await?;
     
     if response.status() == reqwest::StatusCode::NO_CONTENT {
         return Ok(None);
@@ -63,9 +88,12 @@ pub async fn fetch_latest_firmware(client: &Client, config: &Config) -> Result<O
     Ok(Some(firmware))
 }
 
-pub async fn download_firmware(client: &Client, firmware_url: &str) -> Result<Vec<u8>> {
+pub async fn download_firmware(client: &Client, config: &Config, firmware_url: &str) -> Result<Vec<u8>> {
     log::info!("Downloading firmware from {}", firmware_url);
-    let response = client.get(firmware_url).send().await?;
+    let auth_token = config.auth_token.as_ref().ok_or_else(|| anyhow::anyhow!("Auth token not found"))?;
+    let response = client.get(firmware_url)
+        .header("Authorization", auth_token)
+        .send().await?;
     let bytes = response.error_for_status()?.bytes().await?.to_vec();
     log::info!("Firmware downloaded successfully ({} bytes).", bytes.len());
     Ok(bytes)

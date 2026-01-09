@@ -26,6 +26,13 @@ class Device(Base):
     desired_sample_interval_secs = Column(Integer, default=10)
     desired_upload_interval_secs = Column(Integer, default=60)
     desired_heartbeat_interval_secs = Column(Integer, default=30)
+    config_flags = Column(String, nullable=True, default="{}")
+    lifecycle_state = Column(String, default="new", nullable=False) # new, active, suspended, decommissioned
+    auth_token = Column(String, unique=True, nullable=True, index=True)
+    registered_at = Column(DateTime, nullable=True)
+    lifecycle_state = Column(String, default="new", nullable=False) # new, active, suspended, decommissioned
+    auth_token = Column(String, unique=True, nullable=True, index=True)
+    registered_at = Column(DateTime, nullable=True)
 
     measurements = relationship("Measurement", back_populates="device")
     errors = relationship("DeviceError", back_populates="device")
@@ -43,6 +50,7 @@ class Firmware(Base):
     target_percent = Column(Integer, default=100)
     required_region = Column(String, nullable=True)
     required_hardware_rev = Column(String, nullable=True)
+    metrics_summary = Column(String, nullable=True)
 
 class Measurement(Base):
     __tablename__ = "measurements"
@@ -54,6 +62,10 @@ class Measurement(Base):
     humidity = Column(Float)
     battery = Column(Float)
     sequence_number = Column(Integer)
+    firmware_version = Column(String, nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    speed = Column(Float, nullable=True)
 
     device = relationship("Device", back_populates="measurements")
 

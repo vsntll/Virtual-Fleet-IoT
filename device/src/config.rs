@@ -1,11 +1,14 @@
 use anyhow::Result;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::env;
+use std::fs;
+use std::io::{self, Write};
 use uuid::Uuid;
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Config {
     pub device_id: String,
+    pub auth_token: Option<String>,
     pub backend_url: String,
     pub sample_interval_secs: u64,
     pub upload_interval_secs: u64,
@@ -18,6 +21,7 @@ pub struct Config {
 impl Config {
     pub fn from_env() -> Result<Self> {
         let device_id = env::var("DEVICE_ID").unwrap_or_else(|_| Uuid::new_v4().to_string());
+        let auth_token = env::var("AUTH_TOKEN").ok();
         let backend_url = env::var("BACKEND_URL").unwrap_or_else(|_| "http://localhost:8000".to_string());
         
         let sample_interval_secs = get_env_var_u64("SAMPLE_INTERVAL_SECS", 10);
@@ -30,6 +34,7 @@ impl Config {
 
         Ok(Config {
             device_id,
+            auth_token,
             backend_url,
             sample_interval_secs,
             upload_interval_secs,
@@ -38,6 +43,21 @@ impl Config {
             region,
             hardware_rev,
         })
+    }
+
+    const CONFIG_FILE: &str = "device_config.json";
+
+    pub fn load_from_file() -> Result<Self> {
+        let contents = fs::read_to_string(Self::CONFIG_FILE)?;
+        let config: Config = serde_json::from_str(&contents)?;
+        Ok(config)
+    }
+
+    pub fn save_to_file(&self) -> Result<()> {
+        let contents = serde_json::to_string_pretty(self)?;
+        let mut file = fs::File::create(Self::CONFIG_FILE)?;
+        file.write_all(contents.as_bytes())?;
+        Ok(())
     }
 }
 

@@ -1,40 +1,67 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Device Analysis - {{ device.id }}</title>
-    <link rel="stylesheet" href="/static/main.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body>
-    <h1>Temperature Analysis for {{ device.id }}</h1>
-    <a href="/">Back to Fleet Overview</a>
-    <div style="width: 80%; margin: auto;">
-        <canvas id="temp-chart"></canvas>
+{% extends "base.html" %}
+
+{% block title %}Device Analysis: {{ device.id }}{% endblock %}
+
+{% block content %}
+    {% if device %}
+    <h1 class="text-2xl font-bold mb-4">Device Analysis: {{ device.id }}</h1>
+    <p>Viewing analysis for device: {{ device.id }}</p>
+
+    <div class="chart-container">
+        <canvas id="tempChart"></canvas>
     </div>
 
+    {% else %}
+    <h1>Device not found</h1>
+    {% endif %}
+    <br>
+    <a href="/devices/{{ device.id }}" class="button">Back to Device Details</a>
+    <a href="/" class="button">Back to Fleet</a>
+{% endblock %}
+
+{% block scripts %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        const ctx = document.getElementById('temp-chart').getContext('2d');
         const measurements = {{ measurements | safe }};
-        
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: measurements.map(m => new Date(m.timestamp).toLocaleTimeString()),
-                datasets: [{
-                    label: 'Temperature (°C)',
-                    data: measurements.map(m => m.temp),
-                    borderColor: 'rgb(255, 99, 132)',
-                    tension: 0.1
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: false
+
+        if (measurements && measurements.length > 0) {
+            const labels = measurements.map(m => new Date(m.timestamp).toLocaleString());
+            const tempData = measurements.map(m => m.temp);
+
+            const ctx = document.getElementById('tempChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Temperature',
+                        data: tempData,
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'category',
+                            labels: labels,
+                            title: {
+                                display: true,
+                                text: 'Time'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Temperature (°C)'
+                            }
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
     </script>
-</body>
-</html>
+{% endblock %}

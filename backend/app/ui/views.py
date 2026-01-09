@@ -27,9 +27,18 @@ async def read_device(request: Request, device_id: str, db: Session = Depends(ge
     device = db.query(models.Device).filter(models.Device.id == device_id).first()
     if device:
         measurements = db.query(models.Measurement).filter(models.Measurement.device_id == device_id).order_by(models.Measurement.timestamp.desc()).limit(20).all()
+        config_flags = {}
+        if device.config_flags:
+            try:
+                config_flags = json.loads(device.config_flags)
+            except json.JSONDecodeError:
+                pass # Handle invalid JSON by returning empty dict
     else:
         measurements = []
-    return templates.TemplateResponse("device_detail.html", {"request": request, "device": device, "measurements": measurements})
+        config_flags = {}
+    return templates.TemplateResponse("device_detail.html", {"request": request, "device": device, "measurements": measurements, "config_flags": config_flags})
+
+import json
 
 import json
 
@@ -48,3 +57,47 @@ async def read_device_analysis(request: Request, device_id: str, db: Session = D
     else:
         measurements = "[]"
     return templates.TemplateResponse("device_analysis.html", {"request": request, "device": device, "measurements": measurements})
+
+def from_json_filter(value):
+    if value:
+        return json.loads(value)
+    return {}
+
+templates.env.filters['from_json'] = from_json_filter
+
+@router.get("/firmware_rollouts", response_class=HTMLResponse)
+async def read_firmware_rollouts(request: Request, db: Session = Depends(get_db)):
+    firmware_versions = db.query(models.Firmware).order_by(models.Firmware.created_at.desc()).all()
+    return templates.TemplateResponse("firmware_rollouts.html", {
+        "request": request,
+        "firmware_versions": firmware_versions
+    })
+
+@router.get("/map", response_class=HTMLResponse)
+async def map_view(request: Request, db: Session = Depends(get_db)):
+    # Fetch all devices
+    devices = db.query(models.Device).all()
+    devices_data = []
+
+    for device in devices:
+        # Get the latest measurement with location data for each device
+        latest_measurement = db.query(models.Measurement)\
+            .filter(models.Measurement.device_id == device.id)\
+            .filter(models.Measurement.latitude.isnot(None), models.Measurement.longitude.isnot(None))\
+            .order_by(models.Measurement.timestamp.desc())\
+            .first()
+
+        if latest_measurement:
+            devices_data.append({
+                "id": device.id,
+                "latitude": latest_measurement.latitude,
+                "longitude": latest_measurement.longitude,
+                "current_version": device.current_version,
+                "status": device.status,
+                "environment": device.environment,
+            })
+    
+    return templates.TemplateResponse("map_view.html", {
+        "request": request,
+        "devices_data": devices_data
+    })

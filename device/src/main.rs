@@ -17,7 +17,27 @@ use ota::OtaState;
 async fn main() -> Result<()> {
     env_logger::init();
 
-    let config = Config::from_env()?;
+    let mut config = match Config::load_from_file() {
+        Ok(conf) => {
+            log::info!("Loaded config from file: {:?}", conf);
+            conf
+        },
+        Err(e) => {
+            log::warn!("Could not load config from file: {}. Attempting to register device.", e);
+            let mut boot_config = Config::from_env()?; // Get initial config from env (especially backend_url)
+            
+            let client = Client::new();
+            let register_response = net::register_device(&client, &boot_config.backend_url, uuid::Uuid::new_v4()).await?;
+            
+            boot_config.device_id = register_response.device_id.to_string();
+            boot_config.auth_token = Some(register_response.auth_token.to_string());
+            
+            boot_config.save_to_file()?;
+            log::info!("Device registered and config saved.");
+            boot_config
+        }
+    };
+
     log::info!("Device starting with config: {:?}", config);
 
     let mut conn = storage::init()?;

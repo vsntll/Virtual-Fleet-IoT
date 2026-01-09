@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Firmware Rollouts{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Firmware Rollout Management</h1>
+
+<div class="overflow-x-auto">
+    <table class="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
+        <thead class="bg-gray-800 text-white">
+            <tr>
+                <th class="py-3 px-4 uppercase font-semibold text-sm">Version</th>
+                <th class="py-3 px-4 uppercase font-semibold text-sm">Created At</th>
+                <th class="py-3 px-4 uppercase font-semibold text-sm">Rollout Phase</th>
+                <th class="py-3 px-4 uppercase font-semibold text-sm">Target %</th>
+                <th class="py-3 px-4 uppercase font-semibold text-sm">Metrics Summary</th>
+                <th class="py-3 px-4 uppercase font-semibold text-sm">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="text-gray-700">
+            {% for firmware in firmware_versions %}
+            <tr class="{% if loop.index % 2 == 0 %}bg-gray-100{% endif %}">
+                <td class="py-3 px-4">{{ firmware.version }}</td>
+                <td class="py-3 px-4">{{ firmware.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td class="py-3 px-4">{{ firmware.rollout_phase }}</td>
+                <td class="py-3 px-4">{{ firmware.target_percent }}%</td>
+                <td class="py-3 px-4">
+                    {% if firmware.metrics_summary %}
+                        {% set metrics = firmware.metrics_summary | from_json %}
+                        Errors (24h): {{ metrics.last_24h_errors | default(0) }}<br>
+                        Active Devices: {{ metrics.active_devices | default(0) }}<br>
+                        Failure Rate (24h): {{ metrics.failure_rate_24h | default(0.0) }}%
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+                <td class="py-3 px-4">
+                    <form action="/api/firmware/{{ firmware.version }}" method="post" class="inline-block">
+                        <input type="hidden" name="_method" value="patch"> {# For simulating PATCH with POST #}
+                        <select name="target_percent" class="border rounded py-1 px-2 text-xs">
+                            <option value="1" {% if firmware.target_percent == 1 %}selected{% endif %}>Canary (1%)</option>
+                            <option value="5" {% if firmware.target_percent == 5 %}selected{% endif %}>Small (5%)</option>
+                            <option value="10" {% if firmware.target_percent == 10 %}selected{% endif %}>10%</option>
+                            <option value="25" {% if firmware.target_percent == 25 %}selected{% endif %}>25%</option>
+                            <option value="50" {% if firmware.target_percent == 50 %}selected{% endif %}>50%</option>
+                            <option value="75" {% if firmware.target_percent == 75 %}selected{% endif %}>75%</option>
+                            <option value="100" {% if firmware.target_percent == 100 %}selected{% endif %}>100%</option>
+                        </select>
+                        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded text-xs ml-2">
+                            Update Rollout
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // This script handles the form submission to simulate PATCH request.
+    // In a full-fledged SPA, you'd use fetch API directly.
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('form[action^="/api/firmware/"]').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const version = this.action.split('/').pop();
+                const targetPercent = this.querySelector('select[name="target_percent"]').value;
+
+                fetch(this.action, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ target_percent: parseInt(targetPercent) }),
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Rollout updated successfully!');
+                        window.location.reload(); // Reload to reflect changes
+                    } else {
+                        alert('Failed to update rollout. See console for details.');
+                        console.error('Error response:', response);
+                    }
+                })
+                .catch(error => {
+                    alert('An error occurred during update. See console for details.');
+                    console.error('Fetch error:', error);
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

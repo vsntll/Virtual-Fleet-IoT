@@ -12,6 +12,8 @@ class FirmwareResponse(BaseModel):
     version: str
     checksum: str
     url: str
+    rollout_phase: str
+    target_percent: int
 
 class FirmwareUpdatePayload(BaseModel):
     target_percent: int
@@ -28,7 +30,13 @@ def get_latest_firmware(device_id: str, db: Session = Depends(get_db)):
     if device.desired_version:
         firmware = db.query(models.Firmware).filter(models.Firmware.version == device.desired_version).first()
         if firmware and firmware.version != device.current_version:
-            return FirmwareResponse(version=firmware.version, checksum=firmware.checksum, url=firmware.url)
+            return FirmwareResponse(
+                version=firmware.version,
+                checksum=firmware.checksum,
+                url=firmware.url,
+                rollout_phase=firmware.rollout_phase,
+                target_percent=firmware.target_percent
+            )
 
     # 2. Segment-based filtering
     fw_query = db.query(models.Firmware)
@@ -52,7 +60,13 @@ def get_latest_firmware(device_id: str, db: Session = Depends(get_db)):
 
     # 4. Canary/Staged rollout logic
     if device.rollout_bucket < latest_firmware.target_percent:
-        return FirmwareResponse(version=latest_firmware.version, checksum=latest_firmware.checksum, url=latest_firmware.url)
+        return FirmwareResponse(
+            version=latest_firmware.version,
+            checksum=latest_firmware.checksum,
+            url=latest_firmware.url,
+            rollout_phase=latest_firmware.rollout_phase,
+            target_percent=latest_firmware.target_percent
+        )
 
     # 5. Default: No applicable update
     return Response(status_code=204)

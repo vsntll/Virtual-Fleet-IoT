@@ -1,12 +1,10 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Device {{ device.id }}</title>
-    <link rel="stylesheet" href="/static/main.css">
-</head>
-<body>
+{% extends "base.html" %}
+
+{% block title %}Device {{ device.id }}{% endblock %}
+
+{% block content %}
     {% if device %}
-    <h1>Device Details: {{ device.id }}</h1>
+    <h1 class="text-2xl font-bold mb-4">Device Details: {{ device.id }}</h1>
     <p><strong>Status:</strong> {{ device.status }}</p>
     <p><strong>Current Version:</strong> {{ device.current_version }}</p>
     <p><strong>Desired Version:</strong> {{ device.desired_version }}</p>
@@ -70,6 +68,17 @@
         <button type="submit">Change Environment</button>
     </form>
 
+    <h2>Config Flags</h2>
+    <form id="update-config-flags-form">
+        <div class="control-group">
+            <label for="config_flags_json">Edit JSON Config Flags:</label>
+            <textarea id="config_flags_json" name="config_flags_json" rows="10" cols="50" class="w-full p-2 border rounded-md font-mono text-sm">{{ config_flags | tojson(indent=2) }}</textarea>
+        </div>
+        <button type="submit" class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">
+            Update Config Flags
+        </button>
+    </form>
+
     <h2>Recent Measurements</h2>
     <table>
         <thead>
@@ -98,6 +107,9 @@
     <a href="/devices/{{ device.id }}/analysis" class="button">View Analysis</a>
     <a href="/">Back to Fleet</a>
 
+{% endblock %}
+
+{% block scripts %}
     <script>
         document.getElementById('update-state-form').addEventListener('submit', function (e) {
             e.preventDefault();
@@ -151,6 +163,40 @@
                 alert('Failed to update environment.');
             });
         });
+
+        document.getElementById('update-config-flags-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const configFlagsJson = document.getElementById('config_flags_json').value;
+            
+            let payload;
+            try {
+                payload = JSON.parse(configFlagsJson);
+            } catch (error) {
+                alert('Invalid JSON in Config Flags. Please correct it.');
+                console.error('JSON parsing error:', error);
+                return;
+            }
+
+            fetch('/api/devices/{{ device.id }}/config_flags', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ config_flags: payload }),
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Config Flags updated successfully!');
+                    window.location.reload();
+                } else {
+                    alert('Failed to update Config Flags. See console for details.');
+                    console.error('Error response:', response);
+                }
+            })
+            .catch((error) => {
+                alert('An error occurred during update. See console for details.');
+                console.error('Fetch error:', error);
+            });
+        });
     </script>
-</body>
-</html>
+{% endblock %}

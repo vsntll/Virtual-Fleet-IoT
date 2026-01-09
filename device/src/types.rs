@@ -8,6 +8,9 @@ pub struct Measurement {
     pub humidity: f32,
     pub battery: f32,
     pub sequence_number: u32,
+    pub latitude: Option<f32>,
+    pub longitude: Option<f32>,
+    pub speed: Option<f32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -49,4 +52,32 @@ pub struct FleetSettings {
     pub sample_interval_secs: u64,
     pub upload_interval_secs: u64,
     pub heartbeat_interval_secs: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct RegisterPayload {
+    pub boot_id: uuid::Uuid,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct RegisterResponse {
+    pub device_id: uuid::Uuid,
+    pub auth_token: uuid::Uuid,
+    pub desired_sample_interval_secs: u64,
+    pub desired_upload_interval_secs: u64,
+    pub desired_heartbeat_interval_secs: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct RegisterPayload {
+    pub boot_id: uuid::Uuid,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct RegisterResponse {
+    pub device_id: uuid::Uuid,
+    pub auth_token: uuid::Uuid,
+    pub desired_sample_interval_secs: u64,
+    pub desired_upload_interval_secs: u64,
+    pub desired_heartbeat_interval_secs: u64,
 }

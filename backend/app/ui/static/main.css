@@ -1,23 +1,242 @@
+/* General Body & Typography */
+body {
+    font-family: 'Inter', sans-serif; /* A modern, readable sans-serif font */
+    line-height: 1.6;
+    color: #333;
+    background-color: #f8faff; /* Light background for a clean feel */
+    margin: 0;
+    padding: 20px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Montserrat', sans-serif; /* A slightly bolder font for headings */
+    color: #2c3e50; /* Darker heading color */
+    margin-top: 1.5em;
+    margin-bottom: 0.8em;
+    font-weight: 700;
+}
+
+h1 { font-size: 2.2em; }
+h2 { font-size: 1.8em; }
+h3 { font-size: 1.5em; }
+
+/* Navigation */
+nav {
+    background-color: #ffffff;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    margin-bottom: 30px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+nav a {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 5px 0;
+    transition: color 0.3s ease;
+}
+
+nav a:hover {
+    color: #0056b3;
+}
+
+/* Forms & Controls */
+form {
+    background-color: #ffffff;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    margin-bottom: 30px;
+}
+
+.control-group {
+    margin-bottom: 18px;
+    display: flex;
+    flex-direction: column;
+}
+
+.control-group label {
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 8px;
+    font-size: 0.95em;
+}
+
+.control-group input[type="range"],
+.control-group input[type="number"],
+.control-group input[type="text"],
+.control-group input[type="color"],
+.control-group select,
+.control-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #dcdcdc;
+    border-radius: 5px;
+    font-size: 1em;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.control-group input[type="range"] {
+    padding: 0; /* Range inputs don't need vertical padding */
+}
+
+.control-group input:focus,
+.control-group select:focus,
+.control-group textarea:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+    outline: none;
+}
+
+.control-group span {
+    margin-left: 10px;
+    font-weight: 500;
+    color: #666;
+}
+
+button[type="submit"], .button {
+    background-color: #28a745; /* Green for primary actions */
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 5px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    display: inline-block;
+    text-align: center;
+    text-decoration: none;
+}
+
+button[type="submit"]:hover, .button:hover {
+    background-color: #218838;
+    transform: translateY(-1px);
+}
+
+button[type="submit"]:active, .button:active {
+    transform: translateY(0);
+}
+
+/* Environment Summary */
 .env-summary {
     display: flex;
     justify-content: space-around;
-    margin-bottom: 20px;
+    gap: 20px;
+    margin-bottom: 30px;
 }
 
 .env-box {
-    border: 1px solid #ccc;
-    padding: 20px;
+    flex: 1;
+    border: 1px solid #e0e0e0;
+    padding: 25px;
     text-align: center;
-    width: 45%;
     border-radius: 8px;
+    background-color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    transition: transform 0.2s ease;
+}
+
+.env-box:hover {
+    transform: translateY(-3px);
+}
+
+.env-box h2 {
+    margin-top: 0;
+    color: #444;
+    font-size: 1.3em;
+}
+
+.env-box p {
+    font-size: 1.6em;
+    font-weight: 700;
+    color: #34495e;
 }
 
 .env-box.blue {
-    background-color: #e3f2fd;
-    border-color: #90caf9;
+    background-color: #eaf4fb;
+    border-color: #bbdefb;
+    color: #1a237e;
 }
 
 .env-box.green {
     background-color: #e8f5e9;
-    border-color: #a5d6a7;
+    border-color: #c8e6c9;
+    color: #2e7d32;
 }
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 30px;
+    background-color: #ffffff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    border-radius: 8px;
+    overflow: hidden; /* Ensures rounded corners apply to content */
+}
+
+table thead th {
+    background-color: #4a69bd; /* A strong blue for headers */
+    color: white;
+    padding: 15px;
+    text-align: left;
+    font-size: 0.9em;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+table tbody tr:nth-child(even) {
+    background-color: #f5f8ff; /* Light stripe for readability */
+}
+
+table tbody tr:hover {
+    background-color: #e9f0ff; /* Subtle hover effect */
+}
+
+table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    color: #444;
+    font-size: 0.95em;
+}
+
+table tbody tr:last-child td {
+    border-bottom: none; /* No border on the last row */
+}
+
+table a {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+table a:hover {
+    text-decoration: underline;
+}
+
+/* Specifics for Device Detail */
+.unconverged {
+    color: #dc3545; /* Red for unconverged states */
+    font-weight: 700;
+}
+
+textarea {
+    resize: vertical; /* Allow vertical resizing for textareas */
+}
+
+/* Map View */
+#map {
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+/* General Utilities */
+.mb-4 { margin-bottom: 1rem; } /* Tailwind-like margin-bottom */
