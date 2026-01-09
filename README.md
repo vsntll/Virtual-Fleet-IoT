@@ -154,6 +154,16 @@ The `tools/` directory contains scripts for managing the system.
     ```sh
     python tools/compute_metrics.py
     ```
+-   **Control Fleet Scaling:**
+    The `tools/fleet_control.py` script is responsible for scaling the virtual device containers up or down based on the `num_devices` setting configured in the web UI. After changing the "Number of Devices" in the web UI, you need to run this script to apply the changes to your Docker containers.
+    ```sh
+    python tools/fleet_control.py scale
+    ```
+    You can also check the current fleet status:
+    ```sh
+    python tools/fleet_control.py status
+    ```
+
 
 ## Running Tests
 
