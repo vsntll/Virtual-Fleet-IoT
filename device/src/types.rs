@@ -11,12 +11,9 @@ pub struct Measurement {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Heartbeat {
-    pub device_id: String,
-    pub firmware_version: String,
-    pub slot: String,
-    pub battery: f32,
-    pub error_codes: Vec<u32>,
+pub struct Heartbeat<'a> {
+    pub device_id: &'a str,
+    pub firmware_version: &'a str,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -28,7 +25,7 @@ pub struct FirmwareMetadata {
 
 // For sending to the backend ingest API
 #[derive(Serialize, Deserialize, Debug)]
-pub struct IngestPayload<'a> {
-    pub device_id: &'a str,
-    pub measurements: &'a [Measurement],
+pub struct IngestPayload {
+    pub device_id: String,
+    pub measurements: Vec<Measurement>,
 }
