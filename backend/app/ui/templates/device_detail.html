@@ -11,6 +11,7 @@
     <p><strong>Current Version:</strong> {{ device.current_version }}</p>
     <p><strong>Desired Version:</strong> {{ device.desired_version }}</p>
     <p><strong>Last Seen:</strong> {{ device.last_seen }}</p>
+    <p><strong>Environment:</strong> {{ device.environment }}</p>
 
     <h2>Device State (Shadow)</h2>
     <table>
@@ -25,17 +26,17 @@
             <tr>
                 <td>Sample Interval (s)</td>
                 <td>{{ device.reported_sample_interval_secs }}</td>
-                <td>{{ device.desired_sample_interval_secs }}</td>
+                <td class="{% if device.reported_sample_interval_secs != device.desired_sample_interval_secs %}unconverged{% endif %}">{{ device.desired_sample_interval_secs }}</td>
             </tr>
             <tr>
                 <td>Upload Interval (s)</td>
                 <td>{{ device.reported_upload_interval_secs }}</td>
-                <td>{{ device.desired_upload_interval_secs }}</td>
+                <td class="{% if device.reported_upload_interval_secs != device.desired_upload_interval_secs %}unconverged{% endif %}">{{ device.desired_upload_interval_secs }}</td>
             </tr>
             <tr>
                 <td>Heartbeat Interval (s)</td>
                 <td>{{ device.reported_heartbeat_interval_secs }}</td>
-                <td>{{ device.desired_heartbeat_interval_secs }}</td>
+                <td class="{% if device.reported_heartbeat_interval_secs != device.desired_heartbeat_interval_secs %}unconverged{% endif %}">{{ device.desired_heartbeat_interval_secs }}</td>
             </tr>
         </tbody>
     </table>
@@ -55,6 +56,18 @@
             <input type="number" id="desired_heartbeat_interval_secs" name="desired_heartbeat_interval_secs" value="{{ device.desired_heartbeat_interval_secs }}">
         </div>
         <button type="submit">Update Desired State</button>
+    </form>
+    
+    <h2>Change Environment</h2>
+    <form id="update-environment-form">
+        <div class="control-group">
+            <label for="environment">Environment:</label>
+            <select id="environment" name="environment">
+                <option value="blue" {% if device.environment == 'blue' %}selected{% endif %}>Blue</option>
+                <option value="green" {% if device.environment == 'green' %}selected{% endif %}>Green</option>
+            </select>
+        </div>
+        <button type="submit">Change Environment</button>
     </form>
 
     <h2>Recent Measurements</h2>
@@ -112,6 +125,30 @@
             .catch((error) => {
                 console.error('Error:', error);
                 alert('Failed to update desired state.');
+            });
+        });
+
+        document.getElementById('update-environment-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+
+            fetch('/api/devices/{{ device.id }}/environment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                alert('Environment updated successfully.');
+                window.location.reload();
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('Failed to update environment.');
             });
         });
     </script>

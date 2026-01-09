@@ -13,7 +13,14 @@ templates = Jinja2Templates(directory="app/ui/templates")
 @router.get("/", response_class=HTMLResponse)
 async def read_root(request: Request, db: Session = Depends(get_db)):
     devices = db.query(models.Device).order_by(models.Device.last_seen.desc()).all()
-    return templates.TemplateResponse("index.html", {"request": request, "devices": devices})
+    blue_count = db.query(models.Device).filter(models.Device.environment == 'blue').count()
+    green_count = db.query(models.Device).filter(models.Device.environment == 'green').count()
+    return templates.TemplateResponse("index.html", {
+        "request": request, 
+        "devices": devices,
+        "blue_count": blue_count,
+        "green_count": green_count
+    })
 
 @router.get("/devices/{device_id}", response_class=HTMLResponse)
 async def read_device(request: Request, device_id: str, db: Session = Depends(get_db)):
