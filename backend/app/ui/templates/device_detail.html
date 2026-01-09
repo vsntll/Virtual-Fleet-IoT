@@ -12,6 +12,51 @@
     <p><strong>Desired Version:</strong> {{ device.desired_version }}</p>
     <p><strong>Last Seen:</strong> {{ device.last_seen }}</p>
 
+    <h2>Device State (Shadow)</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Reported</th>
+                <th>Desired</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Sample Interval (s)</td>
+                <td>{{ device.reported_sample_interval_secs }}</td>
+                <td>{{ device.desired_sample_interval_secs }}</td>
+            </tr>
+            <tr>
+                <td>Upload Interval (s)</td>
+                <td>{{ device.reported_upload_interval_secs }}</td>
+                <td>{{ device.desired_upload_interval_secs }}</td>
+            </tr>
+            <tr>
+                <td>Heartbeat Interval (s)</td>
+                <td>{{ device.reported_heartbeat_interval_secs }}</td>
+                <td>{{ device.desired_heartbeat_interval_secs }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Update Desired State</h2>
+    <form id="update-state-form">
+        <div class="control-group">
+            <label for="desired_sample_interval_secs">Desired Sample Interval (s):</label>
+            <input type="number" id="desired_sample_interval_secs" name="desired_sample_interval_secs" value="{{ device.desired_sample_interval_secs }}">
+        </div>
+        <div class="control-group">
+            <label for="desired_upload_interval_secs">Desired Upload Interval (s):</label>
+            <input type="number" id="desired_upload_interval_secs" name="desired_upload_interval_secs" value="{{ device.desired_upload_interval_secs }}">
+        </div>
+        <div class="control-group">
+            <label for="desired_heartbeat_interval_secs">Desired Heartbeat Interval (s):</label>
+            <input type="number" id="desired_heartbeat_interval_secs" name="desired_heartbeat_interval_secs" value="{{ device.desired_heartbeat_interval_secs }}">
+        </div>
+        <button type="submit">Update Desired State</button>
+    </form>
+
     <h2>Recent Measurements</h2>
     <table>
         <thead>
@@ -39,5 +84,36 @@
     <br>
     <a href="/devices/{{ device.id }}/analysis" class="button">View Analysis</a>
     <a href="/">Back to Fleet</a>
+
+    <script>
+        document.getElementById('update-state-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+            
+            for (const key in data) {
+                data[key] = parseInt(data[key], 10);
+            }
+
+            fetch('/api/devices/{{ device.id }}/state', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                alert('Desired state updated successfully. The device will update on its next heartbeat.');
+                // Optionally, refresh the page to see the new desired state
+                window.location.reload();
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('Failed to update desired state.');
+            });
+        });
+    </script>
 </body>
 </html>

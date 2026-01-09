@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from .database import Base
 import datetime
+import random
 
 class Device(Base):
     __tablename__ = "devices"
@@ -11,6 +12,17 @@ class Device(Base):
     desired_version = Column(String)
     last_seen = Column(DateTime, default=datetime.datetime.utcnow)
     status = Column(String)
+    rollout_bucket = Column(Integer, default=lambda: random.randint(0, 99))
+
+    # Reported state
+    reported_sample_interval_secs = Column(Integer, default=10)
+    reported_upload_interval_secs = Column(Integer, default=60)
+    reported_heartbeat_interval_secs = Column(Integer, default=30)
+    
+    # Desired state
+    desired_sample_interval_secs = Column(Integer, default=10)
+    desired_upload_interval_secs = Column(Integer, default=60)
+    desired_heartbeat_interval_secs = Column(Integer, default=30)
 
     measurements = relationship("Measurement", back_populates="device")
 
@@ -23,6 +35,8 @@ class Firmware(Base):
     url = Column(String)
     rollout_group = Column(String, default="default")
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    rollout_phase = Column(String, default="100%")
+    target_percent = Column(Integer, default=100)
 
 class Measurement(Base):
     __tablename__ = "measurements"

@@ -28,26 +28,13 @@ async fn main() -> Result<()> {
 
     let client = Client::new();
 
-    // Fetch initial fleet settings
-    let mut settings = match net::fetch_fleet_settings(&client, &config).await {
-        Ok(s) => s,
-        Err(e) => {
-            log::error!("Failed to fetch initial fleet settings: {}. Using defaults.", e);
-            // Default settings if the backend is unavailable at startup
-            types::FleetSettings {
-                num_devices: 1, // Not used by the device, but good to have a default
-                sample_interval_secs: config.sample_interval_secs,
-                upload_interval_secs: config.upload_interval_secs,
-                heartbeat_interval_secs: config.heartbeat_interval_secs,
-            }
-        }
-    };
-    log::info!("Initial fleet settings: {:?}", settings);
+    let mut sample_interval_secs = config.sample_interval_secs;
+    let mut upload_interval_secs = config.upload_interval_secs;
+    let mut heartbeat_interval_secs = config.heartbeat_interval_secs;
 
-
-    let mut sample_interval = time::interval(Duration::from_secs(settings.sample_interval_secs));
-    let mut upload_interval = time::interval(Duration::from_secs(settings.upload_interval_secs));
-    let mut heartbeat_interval = time::interval(Duration::from_secs(settings.heartbeat_interval_secs));
+    let mut sample_interval = time::interval(Duration::from_secs(sample_interval_secs));
+    let mut upload_interval = time::interval(Duration::from_secs(upload_interval_secs));
+    let mut heartbeat_interval = time::interval(Duration::from_secs(heartbeat_interval_secs));
     let mut ota_check_interval = time::interval(Duration::from_secs(config.ota_check_interval_secs));
 
     loop {
@@ -81,28 +68,28 @@ async fn main() -> Result<()> {
                 }
             }
             _ = heartbeat_interval.tick() => {
-                if let Err(e) = net::send_heartbeat(&client, &config, &ota_state.current_version).await {
-                    log::error!("Failed to send heartbeat: {}", e);
-                }
-                // Fetch new settings after heartbeat
-                match net::fetch_fleet_settings(&client, &config).await {
-                    Ok(new_settings) => {
-                        if new_settings.sample_interval_secs != settings.sample_interval_secs {
-                            sample_interval = time::interval(Duration::from_secs(new_settings.sample_interval_secs));
-                            log::info!("Updated sample interval to {}s", new_settings.sample_interval_secs);
+                match net::send_heartbeat(&client, &config, &ota_state.current_version, sample_interval_secs, upload_interval_secs, heartbeat_interval_secs).await {
+                    Ok(desired_state) => {
+                        log::info!("Received desired state: {:?}", desired_state);
+                        if desired_state.desired_sample_interval_secs != sample_interval_secs {
+                            sample_interval_secs = desired_state.desired_sample_interval_secs;
+                            sample_interval = time::interval(Duration::from_secs(sample_interval_secs));
+                            log::info!("Updated sample interval to {}s", sample_interval_secs);
                         }
-                        if new_settings.upload_interval_secs != settings.upload_interval_secs {
-                            upload_interval = time::interval(Duration::from_secs(new_settings.upload_interval_secs));
-                            log::info!("Updated upload interval to {}s", new_settings.upload_interval_secs);
+                        if desired_state.desired_upload_interval_secs != upload_interval_secs {
+                            upload_interval_secs = desired_state.desired_upload_interval_secs;
+                            upload_interval = time::interval(Duration::from_secs(upload_interval_secs));
+                            log::info!("Updated upload interval to {}s", upload_interval_secs);
                         }
-                        if new_settings.heartbeat_interval_secs != settings.heartbeat_interval_secs {
-                            heartbeat_interval = time::interval(Duration::from_secs(new_settings.heartbeat_interval_secs));
-                            log::info!("Updated heartbeat interval to {}s", new_settings.heartbeat_interval_secs);
+                        if desired_state.desired_heartbeat_interval_secs != heartbeat_interval_secs {
+                            heartbeat_interval_secs = desired_state.desired_heartbeat_interval_secs;
+                            heartbeat_interval = time::interval(Duration::from_secs(heartbeat_interval_secs));
+                            log::info!("Updated heartbeat interval to {}s", heartbeat_interval_secs);
                         }
-                        settings = new_settings;
+                        // Note: desired_version is not handled here, but in the ota module.
                     }
                     Err(e) => {
-                        log::error!("Failed to fetch fleet settings after heartbeat: {}", e);
+                        log::error!("Failed to send heartbeat: {}", e);
                     }
                 }
             }

@@ -11,9 +11,20 @@ pub struct Measurement {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Heartbeat<'a> {
-    pub device_id: &'a str,
-    pub firmware_version: &'a str,
+pub struct Heartbeat {
+    pub device_id: String,
+    pub firmware_version: String,
+    pub reported_sample_interval_secs: u64,
+    pub reported_upload_interval_secs: u64,
+    pub reported_heartbeat_interval_secs: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct DesiredState {
+    pub desired_version: Option<String>,
+    pub desired_sample_interval_secs: u64,
+    pub desired_upload_interval_secs: u64,
+    pub desired_heartbeat_interval_secs: u64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

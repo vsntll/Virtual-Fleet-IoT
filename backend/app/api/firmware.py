@@ -26,10 +26,11 @@ def get_latest_firmware(device_id: str, db: Session = Depends(get_db)):
         if firmware:
             return FirmwareResponse(version=firmware.version, checksum=firmware.checksum, url=firmware.url)
 
-    # Simple logic: return the latest firmware overall if desired_version is not set
+    # Staged rollout logic
     latest_firmware = db.query(models.Firmware).order_by(models.Firmware.created_at.desc()).first()
     if latest_firmware and latest_firmware.version != device.current_version:
-         return FirmwareResponse(version=latest_firmware.version, checksum=latest_firmware.checksum, url=latest_firmware.url)
+        if device.rollout_bucket < latest_firmware.target_percent:
+            return FirmwareResponse(version=latest_firmware.version, checksum=latest_firmware.checksum, url=latest_firmware.url)
 
     return Response(status_code=204)
 

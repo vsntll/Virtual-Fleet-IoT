@@ -2,18 +2,28 @@ use anyhow::Result;
 use reqwest::Client;
 
 use crate::config::Config;
-use crate::types::{FirmwareMetadata, Heartbeat, IngestPayload, FleetSettings};
+use crate::types::{FirmwareMetadata, Heartbeat, IngestPayload, DesiredState};
 
-pub async fn send_heartbeat<'a>(client: &Client, config: &Config, firmware_version: &'a str) -> Result<()> {
+pub async fn send_heartbeat(
+    client: &Client, 
+    config: &Config, 
+    firmware_version: &str,
+    sample_interval: u64,
+    upload_interval: u64,
+    heartbeat_interval: u64,
+) -> Result<DesiredState> {
     let url = format!("{}/api/devices/heartbeat", config.backend_url);
     let body = Heartbeat {
-        device_id: &config.device_id,
-        firmware_version,
+        device_id: config.device_id.clone(),
+        firmware_version: firmware_version.to_string(),
+        reported_sample_interval_secs: sample_interval,
+        reported_upload_interval_secs: upload_interval,
+        reported_heartbeat_interval_secs: heartbeat_interval,
     };
 
-    client.post(&url).json(&body).send().await?.error_for_status()?;
-    log::info!("Heartbeat sent successfully.");
-    Ok(())
+    let desired_state = client.post(&url).json(&body).send().await?.error_for_status()?.json::<DesiredState>().await?;
+    log::info!("Heartbeat sent successfully, desired state received.");
+    Ok(desired_state)
 }
 
 pub async fn send_ingest(client: &Client, config: &Config, measurements: &[crate::types::Measurement]) -> Result<()> {
@@ -57,10 +67,4 @@ pub async fn download_firmware(client: &Client, firmware_url: &str) -> Result<Ve
     let bytes = response.error_for_status()?.bytes().await?.to_vec();
     log::info!("Firmware downloaded successfully ({} bytes).", bytes.len());
     Ok(bytes)
-}
-
-pub async fn fetch_fleet_settings(client: &Client, config: &Config) -> Result<FleetSettings> {
-    let url = format!("{}/api/fleet/settings", config.backend_url);
-    let settings = client.get(&url).send().await?.json::<FleetSettings>().await?;
-    Ok(settings)
 }
