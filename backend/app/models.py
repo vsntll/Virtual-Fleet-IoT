@@ -33,5 +33,6 @@ class Measurement(Base):
     temp = Column(Float)
     humidity = Column(Float)
     battery = Column(Float)
+    sequence_number = Column(Integer)
 
     device = relationship("Device", back_populates="measurements")

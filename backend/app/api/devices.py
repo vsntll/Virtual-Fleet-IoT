@@ -21,6 +21,7 @@ class MeasurementPayload(BaseModel):
     temp: float
     humidity: float
     battery: float
+    sequence_number: int
 
 class IngestPayload(BaseModel):
     device_id: str
@@ -64,7 +65,8 @@ def ingest(payload: IngestPayload, db: Session = Depends(get_db)):
             timestamp=m.timestamp,
             temp=m.temp,
             humidity=m.humidity,
-            battery=m.battery
+            battery=m.battery,
+            sequence_number=m.sequence_number
         )
         db.add(db_measurement)
     
