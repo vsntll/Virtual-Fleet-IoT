@@ -3,167 +3,188 @@
 {% block title %}Virtual Fleet{% endblock %}
 
 {% block content %}
-    <h1 class="text-2xl font-bold mb-4">Fleet Controls</h1>
-    <nav class="mb-4">
-        <a href="/firmware_rollouts" class="text-blue-500 hover:underline mr-4">Firmware Rollouts</a>
-        <a href="/map" class="text-blue-500 hover:underline mr-4">Fleet Map</a>
-        <a href="/alerts" class="text-blue-500 hover:underline mr-4">Active Alerts</a>
-        <a href="/logs" class="text-blue-500 hover:underline">Application Logs</a>
-    </nav>
-    <form id="fleet-controls-form">
-        <div class="control-group">
-            <label for="num_devices">Number of Devices:</label>
-            <input type="range" id="num_devices" name="num_devices" min="1" max="50" value="15">
-            <span id="num_devices_value">15</span>
-        </div>
-        <div class="control-group">
-            <label for="sample_interval_secs">Sample Interval (secs):</label>
-            <input type="range" id="sample_interval_secs" name="sample_interval_secs" min="1" max="60" value="10">
-            <span id="sample_interval_secs_value">10</span>
-        </div>
-        <div class="control-group">
-            <label for="upload_interval_secs">Upload Interval (secs):</label>
-            <input type="range" id="upload_interval_secs" name="upload_interval_secs" min="10" max="300" value="60">
-            <span id="upload_interval_secs_value">60</span>
-        </div>
-        <div class="control-group">
-            <label for="heartbeat_interval_secs">Heartbeat Interval (secs):</label>
-            <input type="range" id="heartbeat_interval_secs" name="heartbeat_interval_secs" min="10" max="300" value="30">
-            <span id="heartbeat_interval_secs_value">30</span>
-        </div>
-        <div class="control-group">
-            <label for="bg_color">Background Color:</label>
-            <input type="color" id="bg_color" name="bg_color" value="#ffffff">
-        </div>
-        <button type="submit">Update Fleet</button>
-    </form>
+    <div class="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
+        <h1 class="text-4xl font-extrabold text-gray-900 mb-6">Fleet Dashboard</h1>
+        
+        <nav class="flex flex-wrap gap-4 mb-8 bg-white p-4 rounded-lg shadow-md">
+            <a href="/firmware_rollouts" class="text-blue-600 hover:text-blue-800 text-lg font-medium">Firmware Rollouts</a>
+            <a href="/map" class="text-blue-600 hover:text-blue-800 text-lg font-medium">Fleet Map</a>
+            <a href="/alerts" class="text-blue-600 hover:text-blue-800 text-lg font-medium">Active Alerts</a>
+            <a href="/logs" class="text-blue-600 hover:text-blue-800 text-lg font-medium">Application Logs</a>
+        </nav>
 
-    <hr>
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Fleet Controls</h2>
+                <form id="fleet-controls-form" class="space-y-6">
+                    <div class="control-group">
+                        <label for="num_devices" class="block text-lg font-medium text-gray-700">Number of Devices:</label>
+                        <div class="flex items-center space-x-4">
+                            <input type="range" id="num_devices" name="num_devices" min="1" max="50" value="15" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            <span id="num_devices_value" class="text-lg font-semibold text-gray-800">15</span>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label for="sample_interval_secs" class="block text-lg font-medium text-gray-700">Sample Interval (secs):</label>
+                        <div class="flex items-center space-x-4">
+                            <input type="range" id="sample_interval_secs" name="sample_interval_secs" min="1" max="60" value="10" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            <span id="sample_interval_secs_value" class="text-lg font-semibold text-gray-800">10</span>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label for="upload_interval_secs" class="block text-lg font-medium text-gray-700">Upload Interval (secs):</label>
+                        <div class="flex items-center space-x-4">
+                            <input type="range" id="upload_interval_secs" name="upload_interval_secs" min="10" max="300" value="60" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            <span id="upload_interval_secs_value" class="text-lg font-semibold text-gray-800">60</span>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label for="heartbeat_interval_secs" class="block text-lg font-medium text-gray-700">Heartbeat Interval (secs):</label>
+                        <div class="flex items-center space-x-4">
+                            <input type="range" id="heartbeat_interval_secs" name="heartbeat_interval_secs" min="10" max="300" value="30" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            <span id="heartbeat_interval_secs_value" class="text-lg font-semibold text-gray-800">30</span>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label for="bg_color" class="block text-lg font-medium text-gray-700">Background Color:</label>
+                        <input type="color" id="bg_color" name="bg_color" value="#ffffff" class="mt-1 p-1 h-10 w-24 block bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition duration-300 ease-in-out">Update Fleet</button>
+                </form>
+            </div>
 
-    <h1>Environment Summary</h1>
-    <div class="env-summary">
-        <div class="env-box blue">
-            <h2>Blue Environment</h2>
-            <p>{{ blue_count }} devices</p>
-        </div>
-        <div class="env-box green">
-            <h2>Green Environment</h2>
-            <p>{{ green_count }} devices</p>
-        </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Environment Summary</h2>
+                <div class="flex flex-col sm:flex-row gap-6">
+                    <div class="flex-1 bg-blue-50 p-6 rounded-lg border border-blue-200 shadow-sm text-center transform hover:scale-105 transition duration-300 ease-in-out">
+                        <h3 class="text-xl font-semibold text-blue-800 mb-2">Blue Environment</h3>
+                        <p class="text-4xl font-extrabold text-blue-900">{{ blue_count }}</p>
+                        <p class="text-blue-700">devices</p>
+                    </div>
+                    <div class="flex-1 bg-green-50 p-6 rounded-lg border border-green-200 shadow-sm text-center transform hover:scale-105 transition duration-300 ease-in-out">
+                        <h3 class="text-xl font-semibold text-green-800 mb-2">Green Environment</h3>
+                        <p class="text-4xl font-extrabold text-green-900">{{ green_count }}</p>
+                        <p class="text-green-700">devices</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Device Fleet</h2>
+            <div class="mb-6 p-4 bg-gray-50 rounded-lg shadow-inner">
+                <form id="device-filter-form" action="/" method="GET" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                    <!-- Filter and Sort Controls -->
+                    <div>
+                        <label for="filter_status" class="block text-sm font-medium text-gray-700">Status:</label>
+                        <select id="filter_status" name="status" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="">All</option>
+                            {% for s in available_statuses %}
+                                <option value="{{ s }}" {% if current_status == s %}selected{% endif %}>{{ s | title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filter_firmware_version" class="block text-sm font-medium text-gray-700">Firmware Version:</label>
+                        <select id="filter_firmware_version" name="firmware_version" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="">All</option>
+                            {% for fv in available_firmware_versions %}
+                                <option value="{{ fv }}" {% if current_firmware_version == fv %}selected{% endif %}>{{ fv }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filter_environment" class="block text-sm font-medium text-gray-700">Environment:</label>
+                        <select id="filter_environment" name="environment" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="">All</option>
+                            {% for env in available_environments %}
+                                <option value="{{ env }}" {% if current_environment == env %}selected{% endif %}>{{ env | title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filter_region" class="block text-sm font-medium text-gray-700">Region:</label>
+                        <select id="filter_region" name="region" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="">All</option>
+                            {% for r in available_regions %}
+                                <option value="{{ r }}" {% if current_region == r %}selected{% endif %}>{{ r }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filter_hardware_rev" class="block text-sm font-medium text-gray-700">Hardware Revision:</label>
+                        <select id="filter_hardware_rev" name="hardware_rev" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="">All</option>
+                            {% for hr in available_hardware_revs %}
+                                <option value="{{ hr }}" {% if current_hardware_rev == hr %}selected{% endif %}>{{ hr }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="sort_by" class="block text-sm font-medium text-gray-700">Sort By:</label>
+                        <select id="sort_by" name="sort_by" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            {% set sort_options = [
+                                ('id', 'Device ID'), 
+                                ('status', 'Status'), 
+                                ('environment', 'Environment'), 
+                                ('current_version', 'Current Version'),
+                                ('desired_version', 'Desired Version'),
+                                ('last_seen', 'Last Seen')
+                            ] %}
+                            {% for opt_val, opt_text in sort_options %}
+                                <option value="{{ opt_val }}" {% if current_sort_by == opt_val %}selected{% endif %}>{{ opt_text }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="sort_order" class="block text-sm font-medium text-gray-700">Sort Order:</label>
+                        <select id="sort_order" name="sort_order" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            <option value="asc" {% if current_sort_order == 'asc' %}selected{% endif %}>Ascending</option>
+                            <option value="desc" {% if current_sort_order == 'desc' %}selected{% endif %}>Descending</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-full lg:col-span-1 flex items-end">
+                        <button type="submit" class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Apply Filters</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="overflow-x-auto bg-white rounded-lg shadow-md">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device ID</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Environment</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Version</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Desired Version</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Seen</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Predicted Issue</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for device in devices %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><a href="/devices/{{ device.id }}" class="text-indigo-600 hover:text-indigo-900">{{ device.id }}</a></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ device.status }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ device.environment }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ device.current_version }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ device.desired_version }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ device.last_seen }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {% if device.predicted_issue %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">{{ device.predicted_issue }}</span>
+                                {% else %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">No issues</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </div>
-
-    <hr>
-
-    <h1 class="text-2xl font-bold mb-4">Device Fleet</h1>
-
-    <div class="mb-4 p-4 bg-gray-100 rounded-lg shadow-inner">
-        <form id="device-filter-form" action="/" method="GET" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
-            <div>
-                <label for="filter_status" class="block text-sm font-medium text-gray-700">Status:</label>
-                <select id="filter_status" name="status" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                    <option value="">All</option>
-                    {% for s in available_statuses %}
-                        <option value="{{ s }}" {% if current_status == s %}selected{% endif %}>{{ s | title }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label for="filter_firmware_version" class="block text-sm font-medium text-gray-700">Firmware Version:</label>
-                <select id="filter_firmware_version" name="firmware_version" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                    <option value="">All</option>
-                    {% for fv in available_firmware_versions %}
-                        <option value="{{ fv }}" {% if current_firmware_version == fv %}selected{% endif %}>{{ fv }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label for="filter_environment" class="block text-sm font-medium text-gray-700">Environment:</label>
-                <select id="filter_environment" name="environment" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                    <option value="">All</option>
-                    {% for env in available_environments %}
-                        <option value="{{ env }}" {% if current_environment == env %}selected{% endif %}>{{ env | title }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label for="filter_region" class="block text-sm font-medium text-gray-700">Region:</label>
-                <select id="filter_region" name="region" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                    <option value="">All</option>
-                    {% for r in available_regions %}
-                        <option value="{{ r }}" {% if current_region == r %}selected{% endif %}>{{ r }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label for="filter_hardware_rev" class="block text-sm font-medium text-gray-700">Hardware Revision:</label>
-                <select id="filter_hardware_rev" name="hardware_rev" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                    <option value="">All</option>
-                    {% for hr in available_hardware_revs %}
-                        <option value="{{ hr }}" {% if current_hardware_rev == hr %}selected{% endif %}>{{ hr }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label for="sort_by" class="block text-sm font-medium text-gray-700">Sort By:</label>
-                <select id="sort_by" name="sort_by" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                    {% set sort_options = [
-                        ('id', 'Device ID'), 
-                        ('status', 'Status'), 
-                        ('environment', 'Environment'), 
-                        ('current_version', 'Current Version'),
-                        ('desired_version', 'Desired Version'),
-                        ('last_seen', 'Last Seen')
-                    ] %}
-                    {% for opt_val, opt_text in sort_options %}
-                        <option value="{{ opt_val }}" {% if current_sort_by == opt_val %}selected{% endif %}>{{ opt_text }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label for="sort_order" class="block text-sm font-medium text-gray-700">Sort Order:</label>
-                <select id="sort_order" name="sort_order" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                    <option value="asc" {% if current_sort_order == 'asc' %}selected{% endif %}>Ascending</option>
-                    <option value="desc" {% if current_sort_order == 'desc' %}selected{% endif %}>Descending</option>
-                </select>
-            </div>
-            <div class="md:col-span-full lg:col-span-1 flex items-end">
-                <button type="submit" class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Apply Filters</button>
-            </div>
-        </form>
-    </div>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Device ID</th>
-                <th>Status</th>
-                <th>Environment</th>
-                <th>Current Version</th>
-                <th>Desired Version</th>
-                <th>Last Seen</th>
-                <th>Predicted Issue</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for device in devices %}
-            <tr>
-                <td><a href="/devices/{{ device.id }}">{{ device.id }}</a></td>
-                <td>{{ device.status }}</td>
-                <td>{{ device.environment }}</td>
-                <td>{{ device.current_version }}</td>
-                <td>{{ device.desired_version }}</td>
-                <td>{{ device.last_seen }}</td>
-                <td>
-                    {% if device.predicted_issue %}
-                        <span class="badge bg-warning text-dark">{{ device.predicted_issue }}</span>
-                    {% else %}
-                        No issues
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
 {% endblock %}
 
 {% block scripts %}
