@@ -13,6 +13,7 @@ class Device(Base):
     last_seen = Column(DateTime, default=datetime.datetime.utcnow)
     status = Column(String)
     rollout_bucket = Column(Integer, default=lambda: random.randint(0, 99))
+    environment = Column(String, default="blue")
 
     # Reported state
     reported_sample_interval_secs = Column(Integer, default=10)
@@ -25,6 +26,7 @@ class Device(Base):
     desired_heartbeat_interval_secs = Column(Integer, default=30)
 
     measurements = relationship("Measurement", back_populates="device")
+    errors = relationship("DeviceError", back_populates="device")
 
 class Firmware(Base):
     __tablename__ = "firmware"
@@ -50,6 +52,18 @@ class Measurement(Base):
     sequence_number = Column(Integer)
 
     device = relationship("Device", back_populates="measurements")
+
+class DeviceError(Base):
+    __tablename__ = "device_errors"
+
+    id = Column(Integer, primary_key=True, index=True)
+    device_id = Column(String, ForeignKey("devices.id"))
+    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+    firmware_version = Column(String)
+    error_code = Column(String)
+    error_message = Column(String)
+
+    device = relationship("Device", back_populates="errors")
 
 class FleetSetting(Base):
     __tablename__ = "fleet_settings"

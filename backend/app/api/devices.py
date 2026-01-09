@@ -20,6 +20,14 @@ class DeviceState(BaseModel):
     desired_sample_interval_secs: int
     desired_upload_interval_secs: int
     desired_heartbeat_interval_secs: int
+
+class DeviceErrorPayload(BaseModel):
+    firmware_version: str
+    error_code: str
+    error_message: str
+
+class DeviceEnvironment(BaseModel):
+    environment: str
     
 class MeasurementPayload(BaseModel):
     timestamp: datetime.datetime
@@ -69,7 +77,7 @@ def heartbeat(payload: HeartbeatPayload, db: Session = Depends(get_db)):
         "desired_heartbeat_interval_secs": device.desired_heartbeat_interval_secs,
     }
 
-@router.post("/devices/{device_id}/state")
+@router.post("/{device_id}/state")
 def update_device_state(device_id: str, state: DeviceState, db: Session = Depends(get_db)):
     device = db.query(models.Device).filter(models.Device.id == device_id).first()
     if not device:
@@ -79,6 +87,17 @@ def update_device_state(device_id: str, state: DeviceState, db: Session = Depend
     device.desired_upload_interval_secs = state.desired_upload_interval_secs
     device.desired_heartbeat_interval_secs = state.desired_heartbeat_interval_secs
     
+    db.commit()
+    db.refresh(device)
+    return device
+
+@router.post("/{device_id}/environment")
+def update_device_environment(device_id: str, environment: DeviceEnvironment, db: Session = Depends(get_db)):
+    device = db.query(models.Device).filter(models.Device.id == device_id).first()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+
+    device.environment = environment.environment
     db.commit()
     db.refresh(device)
     return device
@@ -102,3 +121,21 @@ def ingest(payload: IngestPayload, db: Session = Depends(get_db)):
     
     db.commit()
     return {"status": "ok", "message": f"Ingested {len(payload.measurements)} measurements."}
+
+@router.post("/{device_id}/errors")
+def report_error(device_id: str, payload: DeviceErrorPayload, db: Session = Depends(get_db)):
+    device = db.query(models.Device).filter(models.Device.id == device_id).first()
+    if not device:
+        raise HTTPException(status_code=404, detail="Device not found")
+
+    error = models.DeviceError(
+        device_id=device_id,
+        timestamp=datetime.datetime.utcnow(),
+        firmware_version=payload.firmware_version,
+        error_code=payload.error_code,
+        error_message=payload.error_message,
+    )
+    db.add(error)
+    db.commit()
+
+    return {"status": "ok", "message": "Error reported successfully."}

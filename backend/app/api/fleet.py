@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from .. import models
 from ..database import get_db
@@ -39,3 +40,50 @@ def update_fleet_settings(settings: FleetSettings, db: Session = Depends(get_db)
     
     return {"message": "Fleet settings updated successfully. Devices will update on their next heartbeat."}
 
+@router.get("/health")
+def get_fleet_health(db: Session = Depends(get_db)):
+    """
+    Provides a high-level overview of fleet health, including error counts
+    and device distribution per firmware version.
+    """
+    # Count errors per firmware version
+    error_counts = (
+        db.query(
+            models.DeviceError.firmware_version,
+            func.count(models.DeviceError.id).label("error_count"),
+        )
+        .group_by(models.DeviceError.firmware_version)
+        .all()
+    )
+
+    # Count devices per firmware version
+    device_counts = (
+        db.query(
+            models.Device.current_version,
+            func.count(models.Device.id).label("device_count"),
+        )
+        .group_by(models.Device.current_version)
+        .all()
+    )
+
+    # Combine metrics into a single response
+    health_report = {}
+
+    for version, count in device_counts:
+        if version not in health_report:
+            health_report[version] = {"device_count": 0, "error_count": 0}
+        health_report[version]["device_count"] = count
+
+    for version, count in error_counts:
+        if version not in health_report:
+            health_report[version] = {"device_count": 0, "error_count": 0}
+        health_report[version]["error_count"] = count
+    
+    # Calculate failure rate
+    for version, metrics in health_report.items():
+        if metrics["device_count"] > 0:
+            metrics["failure_rate"] = metrics["error_count"] / metrics["device_count"]
+        else:
+            metrics["failure_rate"] = 0
+
+    return health_report

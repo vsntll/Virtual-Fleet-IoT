@@ -45,16 +45,33 @@ def test_health_check():
 def test_register_device_on_heartbeat():
     response = client.post(
         "/api/devices/heartbeat",
-        json={"device_id": "test-device-01", "firmware_version": "1.0.0"},
+        json={
+            "device_id": "test-device-01",
+            "firmware_version": "1.0.0",
+            "reported_sample_interval_secs": 10,
+            "reported_upload_interval_secs": 60,
+            "reported_heartbeat_interval_secs": 30
+        },
     )
     assert response.status_code == 200
-    assert response.json() == {"desired_version": None}
+    assert response.json() == {
+        "desired_version": None,
+        "desired_sample_interval_secs": 10,
+        "desired_upload_interval_secs": 60,
+        "desired_heartbeat_interval_secs": 30,
+    }
 
 def test_ingest_data_for_known_device():
     # First, register the device
     client.post(
         "/api/devices/heartbeat",
-        json={"device_id": "test-device-02", "firmware_version": "1.0.0"},
+        json={
+            "device_id": "test-device-02",
+            "firmware_version": "1.0.0",
+            "reported_sample_interval_secs": 10,
+            "reported_upload_interval_secs": 60,
+            "reported_heartbeat_interval_secs": 30
+        },
     )
     
     # Then, ingest data
@@ -67,7 +84,8 @@ def test_ingest_data_for_known_device():
                     "timestamp": "2026-01-08T12:00:00Z",
                     "temp": 25.5,
                     "humidity": 60.1,
-                    "battery": 0.95
+                    "battery": 0.95,
+                    "sequence_number": 1
                 }
             ]
         }
@@ -84,3 +102,76 @@ def test_ingest_data_for_unknown_device():
         }
     )
     assert response.status_code == 404
+
+def test_report_device_error():
+    # Register a device first
+    client.post(
+        "/api/devices/heartbeat",
+        json={
+            "device_id": "test-device-error",
+            "firmware_version": "1.1.0",
+            "reported_sample_interval_secs": 10,
+            "reported_upload_interval_secs": 60,
+            "reported_heartbeat_interval_secs": 30
+        },
+    )
+
+    # Report an error
+    response = client.post(
+        "/api/devices/test-device-error/errors",
+        json={
+            "firmware_version": "1.1.0",
+            "error_code": "E-101",
+            "error_message": "Sensor read failure",
+        },
+    )
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok", "message": "Error reported successfully."}
+
+def test_get_fleet_health():
+    # Register device 1 and report an error
+    client.post(
+        "/api/devices/heartbeat",
+        json={
+            "device_id": "health-test-01",
+            "firmware_version": "2.0.0",
+            "reported_sample_interval_secs": 10,
+            "reported_upload_interval_secs": 60,
+            "reported_heartbeat_interval_secs": 30
+        },
+    )
+    client.post(
+        "/api/devices/health-test-01/errors",
+        json={
+            "firmware_version": "2.0.0",
+            "error_code": "E-202",
+            "error_message": "Network timeout",
+        },
+    )
+
+    # Register device 2 with a different version
+    client.post(
+        "/api/devices/heartbeat",
+        json={
+            "device_id": "health-test-02",
+            "firmware_version": "2.1.0",
+            "reported_sample_interval_secs": 10,
+            "reported_upload_interval_secs": 60,
+            "reported_heartbeat_interval_secs": 30
+        },
+    )
+
+    # Get fleet health
+    response = client.get("/api/fleet/health")
+    assert response.status_code == 200
+    health_data = response.json()
+
+    assert "2.0.0" in health_data
+    assert health_data["2.0.0"]["device_count"] == 1
+    assert health_data["2.0.0"]["error_count"] == 1
+    assert health_data["2.0.0"]["failure_rate"] == 1.0
+
+    assert "2.1.0" in health_data
+    assert health_data["2.1.0"]["device_count"] == 1
+    assert health_data["2.1.0"]["error_count"] == 0
+    assert health_data["2.1.0"]["failure_rate"] == 0.0
