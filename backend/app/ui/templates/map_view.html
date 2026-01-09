@@ -34,7 +34,7 @@
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        var devices_data = {{ devices_data | tojson }};
+        var devices_data = {{ devices_data | tojson | safe }};
 
         devices_data.forEach(function(device) {
             if (device.latitude && device.longitude) {

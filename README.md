@@ -114,7 +114,7 @@ Once the services are running and devices are activated, you can access the web 
 -   **Application Logs:** `http://localhost:8000/logs`
     *   Access a stream of structured application logs from the backend.
 
-**Troubleshooting the Map:** If the map doesn't display correctly, check your browser's developer console for JavaScript errors. Ensure you have network access to `https://unpkg.com/leaflet/dist/leaflet.css` and `https://unpkg.com/leaflet/dist/leaflet.js` as these are loaded from a CDN.
+Troubleshooting the Map: If the map doesn't display correctly, check your browser's developer console for JavaScript errors. If you see "Uncaught SyntaxError: expected property name, got '&'", ensure the JSON data embedded in the template is properly escaped using the '| safe' filter in Jinja2. Also, ensure you have network access to https://unpkg.com/leaflet/dist/leaflet.css and https://unpkg.com/leaflet/dist/leaflet.js as these are loaded from a CDN.
 
 ### API Documentation
 
