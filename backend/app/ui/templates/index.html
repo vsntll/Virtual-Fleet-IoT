@@ -6,7 +6,9 @@
     <h1 class="text-2xl font-bold mb-4">Fleet Controls</h1>
     <nav class="mb-4">
         <a href="/firmware_rollouts" class="text-blue-500 hover:underline mr-4">Firmware Rollouts</a>
-        <a href="/map" class="text-blue-500 hover:underline">Fleet Map</a>
+        <a href="/map" class="text-blue-500 hover:underline mr-4">Fleet Map</a>
+        <a href="/alerts" class="text-blue-500 hover:underline mr-4">Active Alerts</a>
+        <a href="/logs" class="text-blue-500 hover:underline">Application Logs</a>
     </nav>
     <form id="fleet-controls-form">
         <div class="control-group">
@@ -52,7 +54,84 @@
 
     <hr>
 
-    <h1>Device Fleet</h1>
+    <h1 class="text-2xl font-bold mb-4">Device Fleet</h1>
+
+    <div class="mb-4 p-4 bg-gray-100 rounded-lg shadow-inner">
+        <form id="device-filter-form" action="/" method="GET" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
+            <div>
+                <label for="filter_status" class="block text-sm font-medium text-gray-700">Status:</label>
+                <select id="filter_status" name="status" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    <option value="">All</option>
+                    {% for s in available_statuses %}
+                        <option value="{{ s }}" {% if current_status == s %}selected{% endif %}>{{ s | title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="filter_firmware_version" class="block text-sm font-medium text-gray-700">Firmware Version:</label>
+                <select id="filter_firmware_version" name="firmware_version" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    <option value="">All</option>
+                    {% for fv in available_firmware_versions %}
+                        <option value="{{ fv }}" {% if current_firmware_version == fv %}selected{% endif %}>{{ fv }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="filter_environment" class="block text-sm font-medium text-gray-700">Environment:</label>
+                <select id="filter_environment" name="environment" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    <option value="">All</option>
+                    {% for env in available_environments %}
+                        <option value="{{ env }}" {% if current_environment == env %}selected{% endif %}>{{ env | title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="filter_region" class="block text-sm font-medium text-gray-700">Region:</label>
+                <select id="filter_region" name="region" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    <option value="">All</option>
+                    {% for r in available_regions %}
+                        <option value="{{ r }}" {% if current_region == r %}selected{% endif %}>{{ r }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="filter_hardware_rev" class="block text-sm font-medium text-gray-700">Hardware Revision:</label>
+                <select id="filter_hardware_rev" name="hardware_rev" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    <option value="">All</option>
+                    {% for hr in available_hardware_revs %}
+                        <option value="{{ hr }}" {% if current_hardware_rev == hr %}selected{% endif %}>{{ hr }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="sort_by" class="block text-sm font-medium text-gray-700">Sort By:</label>
+                <select id="sort_by" name="sort_by" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    {% set sort_options = [
+                        ('id', 'Device ID'), 
+                        ('status', 'Status'), 
+                        ('environment', 'Environment'), 
+                        ('current_version', 'Current Version'),
+                        ('desired_version', 'Desired Version'),
+                        ('last_seen', 'Last Seen')
+                    ] %}
+                    {% for opt_val, opt_text in sort_options %}
+                        <option value="{{ opt_val }}" {% if current_sort_by == opt_val %}selected{% endif %}>{{ opt_text }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="sort_order" class="block text-sm font-medium text-gray-700">Sort Order:</label>
+                <select id="sort_order" name="sort_order" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    <option value="asc" {% if current_sort_order == 'asc' %}selected{% endif %}>Ascending</option>
+                    <option value="desc" {% if current_sort_order == 'desc' %}selected{% endif %}>Descending</option>
+                </select>
+            </div>
+            <div class="md:col-span-full lg:col-span-1 flex items-end">
+                <button type="submit" class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Apply Filters</button>
+            </div>
+        </form>
+    </div>
+
     <table>
         <thead>
             <tr>
@@ -62,6 +141,7 @@
                 <th>Current Version</th>
                 <th>Desired Version</th>
                 <th>Last Seen</th>
+                <th>Predicted Issue</th>
             </tr>
         </thead>
         <tbody>
@@ -73,6 +153,13 @@
                 <td>{{ device.current_version }}</td>
                 <td>{{ device.desired_version }}</td>
                 <td>{{ device.last_seen }}</td>
+                <td>
+                    {% if device.predicted_issue %}
+                        <span class="badge bg-warning text-dark">{{ device.predicted_issue }}</span>
+                    {% else %}
+                        No issues
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>

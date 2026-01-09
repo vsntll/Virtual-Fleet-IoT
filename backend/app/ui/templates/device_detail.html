@@ -1,116 +1,223 @@
 {% extends "base.html" %}
 
-{% block title %}Device {{ device.id }}{% endblock %}
+{% block title %}Device Detail: {{ device.id }}{% endblock %}
+
+{% block head %}
+    {{ super() }}
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
 
 {% block content %}
-    {% if device %}
-    <h1 class="text-2xl font-bold mb-4">Device Details: {{ device.id }}</h1>
-    <p><strong>Status:</strong> {{ device.status }}</p>
-    <p><strong>Current Version:</strong> {{ device.current_version }}</p>
-    <p><strong>Desired Version:</strong> {{ device.desired_version }}</p>
-    <p><strong>Last Seen:</strong> {{ device.last_seen }}</p>
-    <p><strong>Environment:</strong> {{ device.environment }}</p>
+{% if device %}
+<h1 class="text-2xl font-bold mb-4">Device Detail: {{ device.id }}</h1>
 
-    <h2>Device State (Shadow)</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Parameter</th>
-                <th>Reported</th>
-                <th>Desired</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Sample Interval (s)</td>
-                <td>{{ device.reported_sample_interval_secs }}</td>
-                <td class="{% if device.reported_sample_interval_secs != device.desired_sample_interval_secs %}unconverged{% endif %}">{{ device.desired_sample_interval_secs }}</td>
-            </tr>
-            <tr>
-                <td>Upload Interval (s)</td>
-                <td>{{ device.reported_upload_interval_secs }}</td>
-                <td class="{% if device.reported_upload_interval_secs != device.desired_upload_interval_secs %}unconverged{% endif %}">{{ device.desired_upload_interval_secs }}</td>
-            </tr>
-            <tr>
-                <td>Heartbeat Interval (s)</td>
-                <td>{{ device.reported_heartbeat_interval_secs }}</td>
-                <td class="{% if device.reported_heartbeat_interval_secs != device.desired_heartbeat_interval_secs %}unconverged{% endif %}">{{ device.desired_heartbeat_interval_secs }}</td>
-            </tr>
-        </tbody>
-    </table>
+{% if device.predicted_issue %}
+    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4" role="alert">
+        <p class="font-bold">Maintenance Recommended</p>
+        <p>{{ device.predicted_issue }}</p>
+    </div>
+{% endif %}
 
-    <h2>Update Desired State</h2>
-    <form id="update-state-form">
-        <div class="control-group">
-            <label for="desired_sample_interval_secs">Desired Sample Interval (s):</label>
-            <input type="number" id="desired_sample_interval_secs" name="desired_sample_interval_secs" value="{{ device.desired_sample_interval_secs }}">
-        </div>
-        <div class="control-group">
-            <label for="desired_upload_interval_secs">Desired Upload Interval (s):</label>
-            <input type="number" id="desired_upload_interval_secs" name="desired_upload_interval_secs" value="{{ device.desired_upload_interval_secs }}">
-        </div>
-        <div class="control-group">
-            <label for="desired_heartbeat_interval_secs">Desired Heartbeat Interval (s):</label>
-            <input type="number" id="desired_heartbeat_interval_secs" name="desired_heartbeat_interval_secs" value="{{ device.desired_heartbeat_interval_secs }}">
-        </div>
-        <button type="submit">Update Desired State</button>
-    </form>
-    
-    <h2>Change Environment</h2>
-    <form id="update-environment-form">
-        <div class="control-group">
-            <label for="environment">Environment:</label>
-            <select id="environment" name="environment">
-                <option value="blue" {% if device.environment == 'blue' %}selected{% endif %}>Blue</option>
-                <option value="green" {% if device.environment == 'green' %}selected{% endif %}>Green</option>
-            </select>
-        </div>
-        <button type="submit">Change Environment</button>
-    </form>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="bg-white shadow-md rounded-lg p-4">
+        <h2 class="text-xl font-semibold mb-2">Device Information</h2>
+        <p><strong>ID:</strong> {{ device.id }}</p>
+        <p><strong>Current Version:</strong> {{ device.current_version }}</p>
+        <p><strong>Desired Version:</strong> {{ device.desired_version | default('N/A') }}</p>
+        <p><strong>Last Seen:</strong> {{ device.last_seen.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+        <p><strong>Status:</strong> {{ device.status }}</p>
+        <p><strong>Environment:</strong> {{ device.environment }}</p>
+        <p><strong>Region:</strong> {{ device.region | default('N/A') }}</p>
+        <p><strong>Hardware Revision:</strong> {{ device.hardware_rev | default('N/A') }}</p>
+        <p><strong>Rollout Bucket:</strong> {{ device.rollout_bucket }}</p>
+        <p><strong>Lifecycle State:</strong> {{ device.lifecycle_state }}</p>
+        <p><strong>Auth Token:</strong> {{ device.auth_token }}</p>
+        <p><strong>Registered At:</strong> {{ device.registered_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+    </div>
 
-    <h2>Config Flags</h2>
-    <form id="update-config-flags-form">
-        <div class="control-group">
-            <label for="config_flags_json">Edit JSON Config Flags:</label>
-            <textarea id="config_flags_json" name="config_flags_json" rows="10" cols="50" class="w-full p-2 border rounded-md font-mono text-sm">{{ config_flags | tojson(indent=2) }}</textarea>
-        </div>
-        <button type="submit" class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">
-            Update Config Flags
-        </button>
-    </form>
+    <div class="bg-white shadow-md rounded-lg p-4">
+        <h2 class="text-xl font-semibold mb-2">Intervals</h2>
+        <p><strong>Sample Interval (Reported):</strong> {{ device.reported_sample_interval_secs }}s</p>
+        <p><strong>Upload Interval (Reported):</strong> {{ device.reported_upload_interval_secs }}s</p>
+        <p><strong>Heartbeat Interval (Reported):</strong> {{ device.reported_heartbeat_interval_secs }}s</p>
+        <br>
+        <p><strong>Sample Interval (Desired):</strong> {{ device.desired_sample_interval_secs }}s</p>
+        <p><strong>Upload Interval (Desired):</strong> {{ device.desired_upload_interval_secs }}s</p>
+        <p><strong>Heartbeat Interval (Desired):</strong> {{ device.desired_heartbeat_interval_secs }}s</p>
+    </div>
 
-    <h2>Recent Measurements</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Timestamp</th>
-                <th>Temperature</th>
-                <th>Humidity</th>
-                <th>Battery</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for m in measurements %}
-            <tr>
-                <td>{{ m.timestamp }}</td>
-                <td>{{ m.temp }}</td>
-                <td>{{ m.humidity }}</td>
-                <td>{{ m.battery }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <h1>Device not found</h1>
-    {% endif %}
-    <br>
-    <a href="/devices/{{ device.id }}/analysis" class="button">View Analysis</a>
-    <a href="/">Back to Fleet</a>
+    <div class="bg-white shadow-md rounded-lg p-4">
+        <h2 class="text-xl font-semibold mb-2">Recent Measurements</h2>
+        {% if measurements %}
+        <table class="min-w-full bg-white">
+            <thead>
+                <tr>
+                    <th class="py-2 px-4 border-b">Time</th>
+                    <th class="py-2 px-4 border-b">Temp</th>
+                    <th class="py-2 px-4 border-b">Humidity</th>
+                    <th class="py-2 px-4 border-b">Battery</th>
+                    <th class="py-2 px-4 border-b">Firmware</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for measurement in measurements %}
+                <tr>
+                    <td class="py-2 px-4 border-b">{{ measurement.timestamp.strftime('%H:%M:%S') }}</td>
+                    <td class="py-2 px-4 border-b">{{ measurement.temp }}</td>
+                    <td class="py-2 px-4 border-b">{{ measurement.humidity }}</td>
+                    <td class="py-2 px-4 border-b">{{ measurement.battery }}</td>
+                    <td class="py-2 px-4 border-b">{{ measurement.firmware_version }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No recent measurements.</p>
+        {% endif %}
+    </div>
+
+    <div class="bg-white shadow-md rounded-lg p-4">
+        <h2 class="text-xl font-semibold mb-2">Device Shadow</h2>
+        {% if shadow_differences %}
+        <table class="min-w-full bg-white">
+            <thead>
+                <tr>
+                    <th class="py-2 px-4 border-b">Key</th>
+                    <th class="py-2 px-4 border-b">Desired</th>
+                    <th class="py-2 px-4 border-b">Reported</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for key, values in shadow_differences.items() %}
+                <tr>
+                    <td class="py-2 px-4 border-b">{{ key }}</td>
+                    <td class="py-2 px-4 border-b {% if values.diff %}text-red-500 font-bold{% endif %}">{{ values.desired | tojson }}</td>
+                    <td class="py-2 px-4 border-b {% if values.diff %}text-red-500 font-bold{% endif %}">{{ values.reported | tojson }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No shadow data available or no differences.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+    <div class="bg-white shadow-md rounded-lg p-4">
+        <h2 class="text-xl font-semibold mb-2">Battery History</h2>
+        <canvas id="batteryChart"></canvas>
+    </div>
+
+    <div class="bg-white shadow-md rounded-lg p-4">
+        <h2 class="text-xl font-semibold mb-2">Recent Errors</h2>
+        {% if recent_errors %}
+        <table class="min-w-full bg-white">
+            <thead>
+                <tr>
+                    <th class="py-2 px-4 border-b">Time</th>
+                    <th class="py-2 px-4 border-b">Firmware</th>
+                    <th class="py-2 px-4 border-b">Code</th>
+                    <th class="py-2 px-4 border-b">Message</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for error in recent_errors %}
+                <tr>
+                    <td class="py-2 px-4 border-b">{{ error.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td class="py-2 px-4 border-b">{{ error.firmware_version }}</td>
+                    <td class="py-2 px-4 border-b">{{ error.error_code }}</td>
+                    <td class="py-2 px-4 border-b">{{ error.error_message }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No recent errors.</p>
+        {% endif %}
+    </div>
+</div>
+
+<h2>Update Desired State</h2>
+<form id="update-state-form">
+    <div class="control-group">
+        <label for="desired_sample_interval_secs">Desired Sample Interval (s):</label>
+        <input type="number" id="desired_sample_interval_secs" name="desired_sample_interval_secs" value="{{ device.desired_sample_interval_secs }}">
+    </div>
+    <div class="control-group">
+        <label for="desired_upload_interval_secs">Desired Upload Interval (s):</label>
+        <input type="number" id="desired_upload_interval_secs" name="desired_upload_interval_secs" value="{{ device.desired_upload_interval_secs }}">
+    </div>
+    <div class="control-group">
+        <label for="desired_heartbeat_interval_secs">Desired Heartbeat Interval (s):</label>
+        <input type="number" id="desired_heartbeat_interval_secs" name="desired_heartbeat_interval_secs" value="{{ device.desired_heartbeat_interval_secs }}">
+    </div>
+    <button type="submit">Update Desired State</button>
+</form>
+
+<h2>Change Environment</h2>
+<form id="update-environment-form">
+    <div class="control-group">
+        <label for="environment">Environment:</label>
+        <select id="environment" name="environment">
+            <option value="blue" {% if device.environment == 'blue' %}selected{% endif %}>Blue</option>
+            <option value="green" {% if device.environment == 'green' %}selected{% endif %}>Green</option>
+        </select>
+    </div>
+    <button type="submit">Change Environment</button>
+</form>
+
+<br>
+<a href="/devices/{{ device.id }}/analysis" class="button">View Analysis</a>
+<a href="/">Back to Fleet</a>
+
+{% else %}
+<h1>Device not found</h1>
+{% endif %}
 
 {% endblock %}
 
 {% block scripts %}
+    {{ super() }} {# Include parent scripts, including Chart.js CDN #}
     <script>
+        // Battery Chart
+        const batteryData = JSON.parse('{{ battery_data | safe }}');
+        if (batteryData.labels.length > 0) {
+            const ctx = document.getElementById('batteryChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: batteryData.labels,
+                    datasets: [{
+                        label: 'Battery Level',
+                        data: batteryData.data,
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Battery Level'
+                            },
+                            min: 0,
+                            max: 1
+                        }
+                    }
+                }
+            });
+        }
+
         document.getElementById('update-state-form').addEventListener('submit', function (e) {
             e.preventDefault();
             const formData = new FormData(this);
@@ -131,7 +238,6 @@
             .then(data => {
                 console.log('Success:', data);
                 alert('Desired state updated successfully. The device will update on its next heartbeat.');
-                // Optionally, refresh the page to see the new desired state
                 window.location.reload();
             })
             .catch((error) => {
@@ -161,41 +267,6 @@
             .catch((error) => {
                 console.error('Error:', error);
                 alert('Failed to update environment.');
-            });
-        });
-
-        document.getElementById('update-config-flags-form').addEventListener('submit', function (e) {
-            e.preventDefault();
-            const configFlagsJson = document.getElementById('config_flags_json').value;
-            
-            let payload;
-            try {
-                payload = JSON.parse(configFlagsJson);
-            } catch (error) {
-                alert('Invalid JSON in Config Flags. Please correct it.');
-                console.error('JSON parsing error:', error);
-                return;
-            }
-
-            fetch('/api/devices/{{ device.id }}/config_flags', {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ config_flags: payload }),
-            })
-            .then(response => {
-                if (response.ok) {
-                    alert('Config Flags updated successfully!');
-                    window.location.reload();
-                } else {
-                    alert('Failed to update Config Flags. See console for details.');
-                    console.error('Error response:', response);
-                }
-            })
-            .catch((error) => {
-                alert('An error occurred during update. See console for details.');
-                console.error('Fetch error:', error);
             });
         });
     </script>

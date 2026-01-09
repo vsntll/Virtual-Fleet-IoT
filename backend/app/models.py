@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from .database import Base
 import datetime
@@ -26,16 +26,18 @@ class Device(Base):
     desired_sample_interval_secs = Column(Integer, default=10)
     desired_upload_interval_secs = Column(Integer, default=60)
     desired_heartbeat_interval_secs = Column(Integer, default=30)
+    desired_state = Column(String, nullable=True)
+    reported_state = Column(String, nullable=True)
     config_flags = Column(String, nullable=True, default="{}")
     lifecycle_state = Column(String, default="new", nullable=False) # new, active, suspended, decommissioned
     auth_token = Column(String, unique=True, nullable=True, index=True)
     registered_at = Column(DateTime, nullable=True)
-    lifecycle_state = Column(String, default="new", nullable=False) # new, active, suspended, decommissioned
-    auth_token = Column(String, unique=True, nullable=True, index=True)
-    registered_at = Column(DateTime, nullable=True)
+    predicted_issue = Column(String, nullable=True)
 
     measurements = relationship("Measurement", back_populates="device")
     errors = relationship("DeviceError", back_populates="device")
+    metrics = relationship("Metric", backref="device_rel") # Using backref for simplicity
+    alerts = relationship("Alert", backref="device_rel") # Using backref for simplicity
 
 class Firmware(Base):
     __tablename__ = "firmware"
@@ -51,6 +53,8 @@ class Firmware(Base):
     required_region = Column(String, nullable=True)
     required_hardware_rev = Column(String, nullable=True)
     metrics_summary = Column(String, nullable=True)
+    signature = Column(String, nullable=True)
+    rollout_status = Column(String, default="active", nullable=False) # new field
 
 class Measurement(Base):
     __tablename__ = "measurements"
@@ -89,3 +93,24 @@ class FleetSetting(Base):
     sample_interval_secs = Column(Integer, default=10)
     upload_interval_secs = Column(Integer, default=60)
     heartbeat_interval_secs = Column(Integer, default=30)
+
+class Metric(Base):
+    __tablename__ = "metrics"
+    id = Column(Integer, primary_key=True, index=True)
+    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+    metric_name = Column(String)
+    metric_value = Column(Float)
+    device_id = Column(String, ForeignKey("devices.id"), nullable=True)
+    firmware_version = Column(String, nullable=True)
+    # group_id - will add if group functionality is implemented
+
+class Alert(Base):
+    __tablename__ = "alerts"
+    id = Column(Integer, primary_key=True, index=True)
+    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+    device_id = Column(String, ForeignKey("devices.id"), nullable=True)
+    firmware_version = Column(String, nullable=True)
+    alert_type = Column(String)
+    severity = Column(String) # e.g., "info", "warning", "critical"
+    message = Column(String)
+    is_active = Column(Boolean, default=True)

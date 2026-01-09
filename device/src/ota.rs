@@ -3,6 +3,7 @@ use reqwest::Client;
 use std::fs;
 use std::path::Path;
 use serde::{Deserialize, Serialize};
+use tracing::{info, error, debug}; // Add debug import
 
 use crate::config::Config;
 use crate::net;
@@ -21,63 +22,75 @@ impl OtaState {
         if Path::new(OTA_STATE_PATH).exists() {
             let file_content = fs::read_to_string(OTA_STATE_PATH)?;
             let state: OtaState = serde_json::from_str(&file_content)?;
+            info!(path = OTA_STATE_PATH, ?state, "Loaded OTA state from file");
             Ok(state)
         } else {
             // Default state if none exists
-            Ok(OtaState {
+            let default_state = OtaState {
                 current_version: env!("CARGO_PKG_VERSION").to_string(),
                 active_slot: "A".to_string(),
-            })
+            };
+            info!(path = OTA_STATE_PATH, ?default_state, "No OTA state file found, using default");
+            Ok(default_state)
         }
     }
 
     pub fn save(&self) -> Result<()> {
         let file_content = serde_json::to_string_pretty(self)?;
         fs::write(OTA_STATE_PATH, file_content)?;
+        info!(path = OTA_STATE_PATH, ?self, "OTA state saved to file");
         Ok(())
     }
 }
 
 pub async fn check_for_update(client: &Client, config: &Config, current_state: &mut OtaState) -> Result<()> {
-    log::info!("Checking for firmware updates...");
+    info!(device_id = %config.device_id, current_version = %current_state.current_version, "Checking for firmware updates");
     
     match net::fetch_latest_firmware(client, config).await {
         Ok(Some(firmware_metadata)) => {
             if firmware_metadata.version != current_state.current_version {
-                log::info!("New firmware version available: {}", firmware_metadata.version);
+                info!(
+                    device_id = %config.device_id, 
+                    current_version = %current_state.current_version, 
+                    new_version = %firmware_metadata.version, 
+                    "New firmware version available"
+                );
                 
                 // In a real device, you'd download to the inactive slot.
                 // Here, we just download it to a firmware directory.
-                if let Ok(firmware_data) = net::download_firmware(client, &firmware_metadata.url).await {
-                    
-                    // Verify checksum (placeholder)
-                    log::info!("Checksum verification would happen here.");
+                match net::download_firmware(client, config, &firmware_metadata.url).await { // Pass config to download_firmware
+                    Ok(firmware_data) => {
+                        debug!(device_id = %config.device_id, "Checksum verification would happen here.");
 
-                    // Create firmware directory if it doesn't exist
-                    fs::create_dir_all(FIRMWARE_DIR)?;
-                    let file_path = Path::new(FIRMWARE_DIR).join(format!("firmware_{}.bin", firmware_metadata.version));
-                    fs::write(file_path, firmware_data)?;
-                    log::info!("Firmware {} saved.", firmware_metadata.version);
+                        // Create firmware directory if it doesn't exist
+                        fs::create_dir_all(FIRMWARE_DIR)?;
+                        let file_path = Path::new(FIRMWARE_DIR).join(format!("firmware_{}.bin", firmware_metadata.version));
+                        fs::write(&file_path, firmware_data)?; // Pass reference to file_path
+                        info!(device_id = %config.device_id, file_path = %file_path.display(), "Firmware saved.");
 
-                    // "Switch" to the new version
-                    current_state.current_version = firmware_metadata.version;
-                    current_state.active_slot = if current_state.active_slot == "A" { "B" } else { "A" }.to_string();
-                    current_state.save()?;
-                    
-                    log::info!("Switched to new firmware version: {}. Rebooting...", current_state.current_version);
+                        // "Switch" to the new version
+                        current_state.current_version = firmware_metadata.version;
+                        current_state.active_slot = if current_state.active_slot == "A" { "B" } else { "A" }.to_string();
+                        current_state.save()?;
+                        
+                        info!(device_id = %config.device_id, new_version = %current_state.current_version, "Switched to new firmware version. Rebooting...");
 
-                    // Simulate reboot by exiting. Docker will restart the container.
-                    std::process::exit(0);
+                        // Simulate reboot by exiting. Docker will restart the container.
+                        std::process::exit(0);
+                    },
+                    Err(e) => {
+                        error!(device_id = %config.device_id, error = %e, "Failed to download new firmware");
+                    }
                 }
             } else {
-                log::info!("Device is up to date.");
+                info!(device_id = %config.device_id, current_version = %current_state.current_version, "Device is up to date.");
             }
         }
         Ok(None) => {
-            log::info!("No new firmware available from backend.");
+            info!(device_id = %config.device_id, "No new firmware available from backend.");
         }
         Err(e) => {
-            log::error!("Failed to check for firmware update: {}", e);
+            error!(device_id = %config.device_id, error = %e, "Failed to check for firmware update");
         }
     }
 

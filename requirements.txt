@@ -9,3 +9,4 @@ python-multipart
 requests
 SQLAlchemy
 uvicorn[standard]
+python-json-logger

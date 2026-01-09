@@ -4,6 +4,7 @@ use std::env;
 use std::fs;
 use std::io::{self, Write};
 use uuid::Uuid;
+use serde_json::Value; // Import Value for chaos_flags
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Config {
@@ -16,6 +17,9 @@ pub struct Config {
     pub ota_check_interval_secs: u64,
     pub region: Option<String>,
     pub hardware_rev: Option<String>,
+    pub desired_shadow_state: Option<serde_json::Value>,
+    pub reported_shadow_state: Option<serde_json::Value>,
+    pub chaos_flags: Option<Value>, // New field for chaos flags
 }
 
 impl Config {
@@ -42,6 +46,9 @@ impl Config {
             ota_check_interval_secs,
             region,
             hardware_rev,
+            desired_shadow_state: None, // Initialize to None
+            reported_shadow_state: None, // Initialize to None
+            chaos_flags: None, // Initialize chaos_flags to None
         })
     }
 

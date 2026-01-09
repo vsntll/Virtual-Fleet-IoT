@@ -11,8 +11,9 @@
             <tr>
                 <th class="py-3 px-4 uppercase font-semibold text-sm">Version</th>
                 <th class="py-3 px-4 uppercase font-semibold text-sm">Created At</th>
-                <th class="py-3 px-4 uppercase font-semibold text-sm">Rollout Phase</th>
+                <th class="py-3 px-4 uppercase font-semibold text-sm">Phase</th>
                 <th class="py-3 px-4 uppercase font-semibold text-sm">Target %</th>
+                <th class="py-3 px-4 uppercase font-semibold text-sm">Status</th>
                 <th class="py-3 px-4 uppercase font-semibold text-sm">Metrics Summary</th>
                 <th class="py-3 px-4 uppercase font-semibold text-sm">Actions</th>
             </tr>
@@ -24,6 +25,7 @@
                 <td class="py-3 px-4">{{ firmware.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
                 <td class="py-3 px-4">{{ firmware.rollout_phase }}</td>
                 <td class="py-3 px-4">{{ firmware.target_percent }}%</td>
+                <td class="py-3 px-4">{{ firmware.rollout_status | title }}</td>
                 <td class="py-3 px-4">
                     {% if firmware.metrics_summary %}
                         {% set metrics = firmware.metrics_summary | from_json %}
@@ -34,9 +36,8 @@
                         N/A
                     {% endif %}
                 </td>
-                <td class="py-3 px-4">
-                    <form action="/api/firmware/{{ firmware.version }}" method="post" class="inline-block">
-                        <input type="hidden" name="_method" value="patch"> {# For simulating PATCH with POST #}
+                <td class="py-3 px-4 space-y-2">
+                    <form action="/api/firmware/{{ firmware.version }}/update_rollout_percent" method="post" class="block">
                         <select name="target_percent" class="border rounded py-1 px-2 text-xs">
                             <option value="1" {% if firmware.target_percent == 1 %}selected{% endif %}>Canary (1%)</option>
                             <option value="5" {% if firmware.target_percent == 5 %}selected{% endif %}>Small (5%)</option>
@@ -47,7 +48,29 @@
                             <option value="100" {% if firmware.target_percent == 100 %}selected{% endif %}>100%</option>
                         </select>
                         <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded text-xs ml-2">
-                            Update Rollout
+                            Update %
+                        </button>
+                    </form>
+                    {% if firmware.rollout_status == 'active' %}
+                    <button class="block bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded text-xs w-full pause-rollout-btn" data-version="{{ firmware.version }}">
+                        Pause Rollout
+                    </button>
+                    {% elif firmware.rollout_status == 'paused' %}
+                    <button class="block bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-2 rounded text-xs w-full resume-rollout-btn" data-version="{{ firmware.version }}">
+                        Resume Rollout
+                    </button>
+                    {% endif %}
+                    <form action="/api/firmware/{{ firmware.version }}/rollback" method="post" class="block">
+                        <select name="rollback_version" class="border rounded py-1 px-2 text-xs">
+                            <option value="">Rollback To...</option>
+                            {% for old_firmware in firmware_versions %}
+                                {% if old_firmware.version != firmware.version %}
+                                <option value="{{ old_firmware.version }}">{{ old_firmware.version }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="bg-orange-500 hover:bg-orange-700 text-white font-bold py-1 px-2 rounded text-xs ml-2">
+                            Rollback
                         </button>
                     </form>
                 </td>
@@ -60,13 +83,12 @@
 
 {% block scripts %}
 <script>
-    // This script handles the form submission to simulate PATCH request.
-    // In a full-fledged SPA, you'd use fetch API directly.
     document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('form[action^="/api/firmware/"]').forEach(form => {
+        // Handle Update Rollout Percentage
+        document.querySelectorAll('form[action$="/update_rollout_percent"]').forEach(form => {
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
-                const version = this.action.split('/').pop();
+                const version = this.action.split('/')[4]; 
                 const targetPercent = this.querySelector('select[name="target_percent"]').value;
 
                 fetch(this.action, {
@@ -79,7 +101,7 @@
                 .then(response => {
                     if (response.ok) {
                         alert('Rollout updated successfully!');
-                        window.location.reload(); // Reload to reflect changes
+                        window.location.reload(); 
                     } else {
                         alert('Failed to update rollout. See console for details.');
                         console.error('Error response:', response);
@@ -87,6 +109,93 @@
                 })
                 .catch(error => {
                     alert('An error occurred during update. See console for details.');
+                    console.error('Fetch error:', error);
+                });
+            });
+        });
+
+        // Handle Pause Rollout
+        document.querySelectorAll('.pause-rollout-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const version = this.dataset.version;
+                fetch(`/api/firmware/${version}/pause_rollout`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Rollout paused successfully!');
+                        window.location.reload();
+                    } else {
+                        alert('Failed to pause rollout. See console for details.');
+                        console.error('Error response:', response);
+                    }
+                })
+                .catch(error => {
+                    alert('An error occurred during pause. See console for details.');
+                    console.error('Fetch error:', error);
+                });
+            });
+        });
+
+        // Handle Resume Rollout
+        document.querySelectorAll('.resume-rollout-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const version = this.dataset.version;
+                fetch(`/api/firmware/${version}/resume_rollout`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Rollout resumed successfully!');
+                        window.location.reload();
+                    } else {
+                        alert('Failed to resume rollout. See console for details.');
+                        console.error('Error response:', response);
+                    }
+                })
+                .catch(error => {
+                    alert('An error occurred during resume. See console for details.');
+                    console.error('Fetch error:', error);
+                });
+            });
+        });
+
+        // Handle Rollback
+        document.querySelectorAll('form[action$="/rollback"]').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const version = this.action.split('/')[4];
+                const rollbackVersion = this.querySelector('select[name="rollback_version"]').value;
+
+                if (!rollbackVersion) {
+                    alert('Please select a version to rollback to.');
+                    return;
+                }
+
+                fetch(this.action, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ rollback_version: rollbackVersion }),
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert(`Rollback to ${rollbackVersion} initiated successfully!`);
+                        window.location.reload();
+                    } else {
+                        alert('Failed to initiate rollback. See console for details.');
+                        console.error('Error response:', response);
+                    }
+                })
+                .catch(error => {
+                    alert('An error occurred during rollback. See console for details.');
                     console.error('Fetch error:', error);
                 });
             });

@@ -1,6 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+import json
+import os
+from typing import List, Dict, Any, Optional
+import datetime
 
 from .. import models
 from ..database import get_db
@@ -11,6 +15,25 @@ class FleetSettings(BaseModel):
     sample_interval_secs: int
     upload_interval_secs: int
     heartbeat_interval_secs: int
+
+class LogEntry(BaseModel):
+    timestamp: datetime.datetime
+    level: str
+    message: str
+    name: str
+    filename: Optional[str] = None
+    lineno: Optional[int] = None
+    funcName: Optional[str] = None
+    pathname: Optional[str] = None
+    process: Optional[int] = None
+    processName: Optional[str] = None
+    thread: Optional[int] = None
+    threadName: Optional[str] = None
+    # Catch-all for other structured data
+    extra: Dict[str, Any] = {}
+
+class LogResponse(BaseModel):
+    logs: List[LogEntry]
 
 router = APIRouter()
 
@@ -87,3 +110,94 @@ def get_fleet_health(db: Session = Depends(get_db)):
             metrics["failure_rate"] = 0
 
     return health_report
+
+@router.get("/logs", response_model=LogResponse)
+async def get_logs(
+    limit: int = 100, 
+    offset: int = 0,
+    level: Optional[str] = None,
+    device_id: Optional[str] = None,
+    firmware_version: Optional[str] = None
+):
+    log_file_path = "backend/app.log"
+    if not os.path.exists(log_file_path):
+        return LogResponse(logs=[])
+
+    all_logs = []
+    with open(log_file_path, 'r') as f:
+        for line in f:
+            try:
+                log_data = json.loads(line)
+                
+                # Apply filters
+                if level and log_data.get("levelname", "").lower() != level.lower():
+                    continue
+                if device_id and log_data.get("device_id") != device_id:
+                    continue
+                if firmware_version and log_data.get("firmware_version") != firmware_version:
+                    continue
+
+                # Reconstruct datetime for Pydantic parsing
+                if "asctime" in log_data:
+                    log_data["timestamp"] = log_data.pop("asctime") # Map asctime to timestamp
+                
+                # Extract extra data
+                extra_data = {k: v for k, v in log_data.items() if k not in ["timestamp", "levelname", "message", "name", "filename", "lineno", "funcName", "pathname", "process", "processName", "thread", "threadName"]}
+                log_data["extra"] = extra_data
+                
+                # Use levelname as level
+                if "levelname" in log_data:
+                    log_data["level"] = log_data.pop("levelname")
+
+                # Reconstruct timestamp from original string format
+                log_data["timestamp"] = datetime.datetime.strptime(
+                    log_data["timestamp"], "%Y-%m-%d %H:%M:%S,%f"
+                )
+
+                all_logs.append(LogEntry(**log_data))
+            except json.JSONDecodeError:
+                # Handle non-JSON lines if any
+                continue
+            except Exception as e:
+                # Handle other potential parsing errors
+                print(f"Error parsing log line: {e} - {line}")
+                continue
+    
+    # Sort logs by timestamp (newest first)
+    all_logs.sort(key=lambda x: x.timestamp, reverse=True)
+
+    # Apply pagination
+    paginated_logs = all_logs[offset:offset + limit]
+
+    return LogResponse(logs=paginated_logs)
+
+class ChaosSettingsPayload(BaseModel):
+    device_id: Optional[str] = None
+    chaos_flags: Dict[str, Any]
+
+@router.patch("/chaos")
+def set_chaos_flags(payload: ChaosSettingsPayload, db: Session = Depends(get_db)):
+    if payload.device_id:
+        devices = db.query(models.Device).filter(models.Device.id == payload.device_id).all()
+    else:
+        devices = db.query(models.Device).all()
+
+    if not devices:
+        raise HTTPException(status_code=404, detail="Device(s) not found.")
+
+    for device in devices:
+        current_desired_state = {}
+        if device.desired_state:
+            try:
+                current_desired_state = json.loads(device.desired_state)
+            except json.JSONDecodeError:
+                pass
+        
+        current_desired_state.update(payload.chaos_flags)
+        device.desired_state = json.dumps(current_desired_state)
+        db.add(device)
+    
+    db.commit()
+    db.refresh(device) # Refresh only the last device, or iterate and refresh all if needed
+
+    return {"message": "Chaos flags updated successfully for specified device(s)."}

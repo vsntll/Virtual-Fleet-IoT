@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Active Alerts{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Active Alerts</h1>
+
+<div class="overflow-x-auto">
+    <table class="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
+        <thead class="bg-gray-800 text-white">
+            <tr>
+                <th class="py-3 px-4 uppercase font-semibold text-sm">Timestamp</th>
+                <th class="py-3 px-4 uppercase font-semibold text-sm">Device ID</th>
+                <th class="py-3 px-4 uppercase font-semibold text-sm">Firmware Version</th>
+                <th class="py-3 px-4 uppercase font-semibold text-sm">Alert Type</th>
+                <th class="py-3 px-4 uppercase font-semibold text-sm">Severity</th>
+                <th class="py-3 px-4 uppercase font-semibold text-sm">Message</th>
+            </tr>
+        </thead>
+        <tbody class="text-gray-700">
+            {% for alert in alerts %}
+            <tr class="{% if loop.index % 2 == 0 %}bg-gray-100{% endif %}">
+                <td class="py-3 px-4">{{ alert.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                <td class="py-3 px-4">
+                    {% if alert.device_id %}
+                        <a href="/devices/{{ alert.device_id }}" class="text-blue-500 hover:underline">{{ alert.device_id }}</a>
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+                <td class="py-3 px-4">{{ alert.firmware_version | default('N/A') }}</td>
+                <td class="py-3 px-4">{{ alert.alert_type }}</td>
+                <td class="py-3 px-4">
+                    {% if alert.severity == 'critical' %}
+                        <span class="text-red-600 font-bold">{{ alert.severity | upper }}</span>
+                    {% elif alert.severity == 'warning' %}
+                        <span class="text-yellow-600 font-bold">{{ alert.severity | upper }}</span>
+                    {% else %}
+                        {{ alert.severity | title }}
+                    {% endif %}
+                </td>
+                <td class="py-3 px-4">{{ alert.message }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="py-3 px-4 text-center">No active alerts.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

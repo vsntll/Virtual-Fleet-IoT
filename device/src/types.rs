@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
 use chrono::{DateTime, Utc};
+use serde_json::Value; // Import Value for generic JSON
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Measurement {
@@ -68,16 +69,19 @@ pub struct RegisterResponse {
     pub desired_heartbeat_interval_secs: u64,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct RegisterPayload {
-    pub boot_id: uuid::Uuid,
+// New structs for Device Shadow
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct DeviceShadow {
+    pub desired: Option<Value>,
+    pub reported: Option<Value>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct RegisterResponse {
-    pub device_id: uuid::Uuid,
-    pub auth_token: uuid::Uuid,
-    pub desired_sample_interval_secs: u64,
-    pub desired_upload_interval_secs: u64,
-    pub desired_heartbeat_interval_secs: u64,
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct DesiredShadowState {
+    pub state: Value,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ReportedShadowState {
+    pub state: Value,
 }

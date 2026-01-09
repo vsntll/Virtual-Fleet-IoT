@@ -3,6 +3,7 @@ venv/
 
 # Database
 backend/fleet.db
+log.md 
 
 # Python cache
 __pycache__/
