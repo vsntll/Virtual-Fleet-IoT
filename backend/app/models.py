@@ -14,6 +14,8 @@ class Device(Base):
     status = Column(String)
     rollout_bucket = Column(Integer, default=lambda: random.randint(0, 99))
     environment = Column(String, default="blue")
+    region = Column(String, nullable=True)
+    hardware_rev = Column(String, nullable=True)
 
     # Reported state
     reported_sample_interval_secs = Column(Integer, default=10)
@@ -39,6 +41,8 @@ class Firmware(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     rollout_phase = Column(String, default="100%")
     target_percent = Column(Integer, default=100)
+    required_region = Column(String, nullable=True)
+    required_hardware_rev = Column(String, nullable=True)
 
 class Measurement(Base):
     __tablename__ = "measurements"

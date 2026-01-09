@@ -11,6 +11,8 @@ pub struct Config {
     pub upload_interval_secs: u64,
     pub heartbeat_interval_secs: u64,
     pub ota_check_interval_secs: u64,
+    pub region: Option<String>,
+    pub hardware_rev: Option<String>,
 }
 
 impl Config {
@@ -23,6 +25,9 @@ impl Config {
         let heartbeat_interval_secs = get_env_var_u64("HEARTBEAT_INTERVAL_SECS", 30);
         let ota_check_interval_secs = get_env_var_u64("OTA_CHECK_INTERVAL_SECS", 300);
 
+        let region = env::var("REGION").ok();
+        let hardware_rev = env::var("HARDWARE_REV").ok();
+
         Ok(Config {
             device_id,
             backend_url,
@@ -30,6 +35,8 @@ impl Config {
             upload_interval_secs,
             heartbeat_interval_secs,
             ota_check_interval_secs,
+            region,
+            hardware_rev,
         })
     }
 }

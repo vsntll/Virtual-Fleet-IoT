@@ -19,6 +19,8 @@ pub async fn send_heartbeat(
         reported_sample_interval_secs: sample_interval,
         reported_upload_interval_secs: upload_interval,
         reported_heartbeat_interval_secs: heartbeat_interval,
+        region: config.region.clone(),
+        hardware_rev: config.hardware_rev.clone(),
     };
 
     let desired_state = client.post(&url).json(&body).send().await?.error_for_status()?.json::<DesiredState>().await?;

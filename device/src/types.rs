@@ -17,6 +17,8 @@ pub struct Heartbeat {
     pub reported_sample_interval_secs: u64,
     pub reported_upload_interval_secs: u64,
     pub reported_heartbeat_interval_secs: u64,
+    pub region: Option<String>,
+    pub hardware_rev: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

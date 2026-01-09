@@ -25,6 +25,8 @@ def main():
     parser.add_argument("--phase", default="100%", help="Rollout phase (e.g., canary, 10%%, 100%%)")
     parser.add_argument("--percent", type=int, default=100, help="Target percentage for the rollout (0-100)")
     parser.add_argument("--group", default="default", help="Rollout group (e.g., default, green)")
+    parser.add_argument("--required-region", help="Required device region for this firmware.")
+    parser.add_argument("--required-hardware-rev", help="Required device hardware revision for this firmware.")
     args = parser.parse_args()
 
     if not os.path.exists(args.file):
@@ -42,13 +44,18 @@ def main():
     try:
         cursor.execute(
             """
-            INSERT INTO firmware (version, checksum, url, rollout_group, rollout_phase, target_percent, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            INSERT INTO firmware (version, checksum, url, rollout_group, rollout_phase, target_percent, required_region, required_hardware_rev, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             """,
-            (args.version, checksum, firmware_url, args.group, args.phase, args.percent)
+            (args.version, checksum, firmware_url, args.group, args.phase, args.percent, args.required_region, args.required_hardware_rev)
         )
         conn.commit()
-        print(f"Successfully published firmware version {args.version} with group '{args.group}', phase '{args.phase}' and target {args.percent}%.")
+        print(f"Successfully published firmware version {args.version} with group '{args.group}', phase '{args.phase}', target {args.percent}%.")
+        if args.required_region:
+            print(f"  Required region: {args.required_region}")
+        if args.required_hardware_rev:
+            print(f"  Required hardware revision: {args.required_hardware_rev}")
+
     except sqlite3.IntegrityError:
         print(f"Error: Firmware version {args.version} already exists.")
     finally:

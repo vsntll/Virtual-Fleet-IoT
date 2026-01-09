@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import pytest
+import time
 
 from ..main import app
 from ..database import Base, get_db
@@ -225,3 +226,59 @@ def test_blue_green_rollout():
     response_green = client.get("/api/firmware/latest?device_id=green-device")
     assert response_green.status_code == 200
     assert response_green.json()["version"] == "2.0.0-green"
+
+def test_segment_rollout():
+    # Register devices in different segments
+    client.post("/api/devices/heartbeat", json={
+        "device_id": "us-device-rev1", "firmware_version": "1.0.0",
+        "region": "us-east-1", "hardware_rev": "1.0",
+        "reported_sample_interval_secs": 10, "reported_upload_interval_secs": 60, "reported_heartbeat_interval_secs": 30
+    })
+    client.post("/api/devices/heartbeat", json={
+        "device_id": "eu-device-rev2", "firmware_version": "1.0.0",
+        "region": "eu-west-1", "hardware_rev": "2.0",
+        "reported_sample_interval_secs": 10, "reported_upload_interval_secs": 60, "reported_heartbeat_interval_secs": 30
+    })
+
+    # Publish firmware for specific segments
+    db = next(override_get_db())
+    
+    # Clear any existing firmware to have a clean slate
+    db.query(models.Firmware).delete()
+    db.commit()
+
+    # Order of creation: 2.0, 2.1, 3.0
+    db.add(models.Firmware(version="2.0-us-only", checksum="abc", url="/f", required_region="us-east-1", target_percent=100))
+    db.commit()
+    time.sleep(0.1) # ensure created_at is different
+    db.add(models.Firmware(version="2.1-rev2-only", checksum="def", url="/f", required_hardware_rev="2.0", target_percent=100))
+    db.commit()
+    time.sleep(0.1)
+    db.add(models.Firmware(version="3.0-universal", checksum="ghi", url="/f", target_percent=100))
+    db.commit()
+
+
+    # US device should get 3.0-universal, since it's the latest compatible firmware
+    response_us = client.get("/api/firmware/latest?device_id=us-device-rev1")
+    assert response_us.status_code == 200
+    assert response_us.json()["version"] == "3.0-universal"
+
+    # EU device should also get 3.0-universal
+    response_eu = client.get("/api/firmware/latest?device_id=eu-device-rev2")
+    assert response_eu.status_code == 200
+    assert response_eu.json()["version"] == "3.0-universal"
+
+    # Now let's add a newer version that is only for us-east-1
+    time.sleep(0.1)
+    db.add(models.Firmware(version="4.0-us-only", checksum="jkl", url="/f", required_region="us-east-1", target_percent=100))
+    db.commit()
+
+    # US device should now get 4.0-us-only
+    response_us_new = client.get("/api/firmware/latest?device_id=us-device-rev1")
+    assert response_us_new.status_code == 200
+    assert response_us_new.json()["version"] == "4.0-us-only"
+
+    # EU device should still get 3.0-universal
+    response_eu_new = client.get("/api/firmware/latest?device_id=eu-device-rev2")
+    assert response_eu_new.status_code == 200
+    assert response_eu_new.json()["version"] == "3.0-universal"

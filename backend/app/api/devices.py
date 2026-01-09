@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 import datetime
 
 from .. import models
@@ -15,6 +15,8 @@ class HeartbeatPayload(BaseModel):
     reported_sample_interval_secs: int
     reported_upload_interval_secs: int
     reported_heartbeat_interval_secs: int
+    region: Optional[str] = None
+    hardware_rev: Optional[str] = None
 
 class DeviceState(BaseModel):
     desired_sample_interval_secs: int
@@ -55,7 +57,9 @@ def heartbeat(payload: HeartbeatPayload, db: Session = Depends(get_db)):
             last_seen=datetime.datetime.utcnow(),
             reported_sample_interval_secs=payload.reported_sample_interval_secs,
             reported_upload_interval_secs=payload.reported_upload_interval_secs,
-            reported_heartbeat_interval_secs=payload.reported_heartbeat_interval_secs
+            reported_heartbeat_interval_secs=payload.reported_heartbeat_interval_secs,
+            region=payload.region,
+            hardware_rev=payload.hardware_rev
         )
         db.add(device)
     else:
@@ -65,6 +69,8 @@ def heartbeat(payload: HeartbeatPayload, db: Session = Depends(get_db)):
         device.reported_sample_interval_secs = payload.reported_sample_interval_secs
         device.reported_upload_interval_secs = payload.reported_upload_interval_secs
         device.reported_heartbeat_interval_secs = payload.reported_heartbeat_interval_secs
+        device.region = payload.region
+        device.hardware_rev = payload.hardware_rev
 
     db.commit()
     db.refresh(device)
