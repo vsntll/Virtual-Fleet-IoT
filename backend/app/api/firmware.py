@@ -38,11 +38,16 @@ def get_latest_firmware(device_id: str, db: Session = Depends(get_db)):
         # No new version available or device is already up-to-date.
         return Response(status_code=204)
 
-    # 3. Canary/Staged rollout logic: Check if the device falls into the rollout percentage.
+    # 3. Blue/Green logic: Check if the firmware is restricted to a specific environment.
+    if latest_firmware.rollout_group == "green" and device.environment != "green":
+        # This firmware is for the green environment only.
+        return Response(status_code=204)
+
+    # 4. Canary/Staged rollout logic: Check if the device falls into the rollout percentage.
     if device.rollout_bucket < latest_firmware.target_percent:
         return FirmwareResponse(version=latest_firmware.version, checksum=latest_firmware.checksum, url=latest_firmware.url)
 
-    # 4. Default: No applicable update found for this device in this phase.
+    # 5. Default: No applicable update found for this device in this phase.
     return Response(status_code=204)
 
 @router.get("/binary/{firmware_id}")

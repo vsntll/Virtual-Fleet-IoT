@@ -24,6 +24,7 @@ def main():
     parser.add_argument("--file", required=True, help="Path to the firmware binary file.")
     parser.add_argument("--phase", default="100%", help="Rollout phase (e.g., canary, 10%%, 100%%)")
     parser.add_argument("--percent", type=int, default=100, help="Target percentage for the rollout (0-100)")
+    parser.add_argument("--group", default="default", help="Rollout group (e.g., default, green)")
     args = parser.parse_args()
 
     if not os.path.exists(args.file):
@@ -41,13 +42,13 @@ def main():
     try:
         cursor.execute(
             """
-            INSERT INTO firmware (version, checksum, url, rollout_phase, target_percent, created_at)
-            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            INSERT INTO firmware (version, checksum, url, rollout_group, rollout_phase, target_percent, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             """,
-            (args.version, checksum, firmware_url, args.phase, args.percent)
+            (args.version, checksum, firmware_url, args.group, args.phase, args.percent)
         )
         conn.commit()
-        print(f"Successfully published firmware version {args.version} with phase '{args.phase}' and target {args.percent}%.")
+        print(f"Successfully published firmware version {args.version} with group '{args.group}', phase '{args.phase}' and target {args.percent}%.")
     except sqlite3.IntegrityError:
         print(f"Error: Firmware version {args.version} already exists.")
     finally:

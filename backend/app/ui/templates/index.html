@@ -36,12 +36,27 @@
 
     <hr>
 
+    <h1>Environment Summary</h1>
+    <div class="env-summary">
+        <div class="env-box blue">
+            <h2>Blue Environment</h2>
+            <p>{{ blue_count }} devices</p>
+        </div>
+        <div class="env-box green">
+            <h2>Green Environment</h2>
+            <p>{{ green_count }} devices</p>
+        </div>
+    </div>
+
+    <hr>
+
     <h1>Device Fleet</h1>
     <table>
         <thead>
             <tr>
                 <th>Device ID</th>
                 <th>Status</th>
+                <th>Environment</th>
                 <th>Current Version</th>
                 <th>Desired Version</th>
                 <th>Last Seen</th>
@@ -52,6 +67,7 @@
             <tr>
                 <td><a href="/devices/{{ device.id }}">{{ device.id }}</a></td>
                 <td>{{ device.status }}</td>
+                <td>{{ device.environment }}</td>
                 <td>{{ device.current_version }}</td>
                 <td>{{ device.desired_version }}</td>
                 <td>{{ device.last_seen }}</td>

@@ -41,6 +41,26 @@ def set_rollout_phase(version, percent):
         if e.response:
             print(f"Details: {e.response.text}")
 
+def set_environment(device_id, environment):
+    """Sets the environment for a specific device."""
+    if environment not in ["blue", "green"]:
+        print("Error: Environment must be 'blue' or 'green'.")
+        return
+
+    try:
+        payload = {"environment": environment}
+        response = requests.post(f"{BASE_URL}/api/devices/{device_id}/environment", json=payload)
+        response.raise_for_status()
+        
+        updated_device = response.json()
+        print(f"Successfully updated device {device_id}.")
+        print(f"New environment: {updated_device['environment']}")
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Error setting environment: {e}")
+        if e.response:
+            print(f"Details: {e.response.text}")
+
 def main():
     parser = argparse.ArgumentParser(description="Control firmware rollouts.")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -54,6 +74,12 @@ def main():
     parser_set_phase.add_argument("version", help="The firmware version to update.")
     parser_set_phase.add_argument("percent", type=int, help="The target percentage for the rollout (0-100).")
     parser_set_phase.set_defaults(func=lambda args: set_rollout_phase(args.version, args.percent))
+
+    # Sub-parser for setting environment
+    parser_set_env = subparsers.add_parser("set-environment", help="Set the environment for a device.")
+    parser_set_env.add_argument("device_id", help="The ID of the device to update.")
+    parser_set_env.add_argument("environment", choices=["blue", "green"], help="The environment to set ('blue' or 'green').")
+    parser_set_env.set_defaults(func=lambda args: set_environment(args.device_id, args.environment))
 
     args = parser.parse_args()
     if hasattr(args, 'func'):

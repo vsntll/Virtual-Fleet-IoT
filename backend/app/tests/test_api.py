@@ -5,6 +5,7 @@ import pytest
 
 from ..main import app
 from ..database import Base, get_db
+from .. import models
 
 # Use an in-memory SQLite database for testing
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
@@ -175,3 +176,52 @@ def test_get_fleet_health():
     assert health_data["2.1.0"]["device_count"] == 1
     assert health_data["2.1.0"]["error_count"] == 0
     assert health_data["2.1.0"]["failure_rate"] == 0.0
+
+def test_blue_green_rollout():
+    # Register a blue device
+    client.post(
+        "/api/devices/heartbeat",
+        json={
+            "device_id": "blue-device",
+            "firmware_version": "1.0.0",
+            "reported_sample_interval_secs": 10,
+            "reported_upload_interval_secs": 60,
+            "reported_heartbeat_interval_secs": 30
+        },
+    )
+    client.post("/api/devices/blue-device/environment", json={"environment": "blue"})
+
+    # Register a green device
+    client.post(
+        "/api/devices/heartbeat",
+        json={
+            "device_id": "green-device",
+            "firmware_version": "1.0.0",
+            "reported_sample_interval_secs": 10,
+            "reported_upload_interval_secs": 60,
+            "reported_heartbeat_interval_secs": 30
+        },
+    )
+    client.post("/api/devices/green-device/environment", json={"environment": "green"})
+
+    # Publish a new firmware for the green group
+    # This requires a direct DB write in the test, as we don't have a file for the tool to use.
+    db = next(override_get_db())
+    green_firmware = models.Firmware(
+        version="2.0.0-green",
+        checksum="abcdef",
+        url="/fake/url",
+        rollout_group="green",
+        target_percent=100,
+    )
+    db.add(green_firmware)
+    db.commit()
+
+    # Blue device should not get the update
+    response_blue = client.get("/api/firmware/latest?device_id=blue-device")
+    assert response_blue.status_code == 204
+
+    # Green device should get the update
+    response_green = client.get("/api/firmware/latest?device_id=green-device")
+    assert response_green.status_code == 200
+    assert response_green.json()["version"] == "2.0.0-green"
