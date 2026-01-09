@@ -24,11 +24,20 @@ async def read_device(request: Request, device_id: str, db: Session = Depends(ge
         measurements = []
     return templates.TemplateResponse("device_detail.html", {"request": request, "device": device, "measurements": measurements})
 
+import json
+
 @router.get("/devices/{device_id}/analysis", response_class=HTMLResponse)
 async def read_device_analysis(request: Request, device_id: str, db: Session = Depends(get_db)):
     device = db.query(models.Device).filter(models.Device.id == device_id).first()
     if device:
-        measurements = db.query(models.Measurement).filter(models.Measurement.device_id == device_id).order_by(models.Measurement.timestamp.asc()).all()
+        measurements_data = db.query(models.Measurement).filter(models.Measurement.device_id == device_id).order_by(models.Measurement.timestamp.asc()).all()
+        # Manually serialize to what we need for the chart, including converting datetime
+        measurements = json.dumps([
+            {
+                "timestamp": m.timestamp.isoformat(),
+                "temp": m.temp
+            } for m in measurements_data
+        ])
     else:
-        measurements = []
+        measurements = "[]"
     return templates.TemplateResponse("device_analysis.html", {"request": request, "device": device, "measurements": measurements})

@@ -14,7 +14,7 @@
 
     <script>
         const ctx = document.getElementById('temp-chart').getContext('2d');
-        const measurements = {{ measurements | tojson }};
+        const measurements = JSON.parse({{ measurements | safe }});
         
         new Chart(ctx, {
             type: 'line',
