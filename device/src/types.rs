@@ -29,3 +29,11 @@ pub struct IngestPayload {
     pub device_id: String,
     pub measurements: Vec<Measurement>,
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct FleetSettings {
+    pub num_devices: u64,
+    pub sample_interval_secs: u64,
+    pub upload_interval_secs: u64,
+    pub heartbeat_interval_secs: u64,
+}

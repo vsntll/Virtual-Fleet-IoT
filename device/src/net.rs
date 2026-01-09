@@ -2,7 +2,7 @@ use anyhow::Result;
 use reqwest::Client;
 
 use crate::config::Config;
-use crate::types::{FirmwareMetadata, Heartbeat, IngestPayload};
+use crate::types::{FirmwareMetadata, Heartbeat, IngestPayload, FleetSettings};
 
 pub async fn send_heartbeat<'a>(client: &Client, config: &Config, firmware_version: &'a str) -> Result<()> {
     let url = format!("{}/api/devices/heartbeat", config.backend_url);
@@ -57,4 +57,10 @@ pub async fn download_firmware(client: &Client, firmware_url: &str) -> Result<Ve
     let bytes = response.error_for_status()?.bytes().await?.to_vec();
     log::info!("Firmware downloaded successfully ({} bytes).", bytes.len());
     Ok(bytes)
+}
+
+pub async fn fetch_fleet_settings(client: &Client, config: &Config) -> Result<FleetSettings> {
+    let url = format!("{}/api/fleet/settings", config.backend_url);
+    let settings = client.get(&url).send().await?.json::<FleetSettings>().await?;
+    Ok(settings)
 }

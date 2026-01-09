@@ -36,3 +36,12 @@ class Measurement(Base):
     sequence_number = Column(Integer)
 
     device = relationship("Device", back_populates="measurements")
+
+class FleetSetting(Base):
+    __tablename__ = "fleet_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    num_devices = Column(Integer, default=15)
+    sample_interval_secs = Column(Integer, default=10)
+    upload_interval_secs = Column(Integer, default=60)
+    heartbeat_interval_secs = Column(Integer, default=30)

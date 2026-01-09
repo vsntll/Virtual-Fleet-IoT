@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Device Analysis - {{ device.id }}</title>
+    <link rel="stylesheet" href="/static/main.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Temperature Analysis for {{ device.id }}</h1>
+    <a href="/">Back to Fleet Overview</a>
+    <div style="width: 80%; margin: auto;">
+        <canvas id="temp-chart"></canvas>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('temp-chart').getContext('2d');
+        const measurements = {{ measurements | tojson }};
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: measurements.map(m => new Date(m.timestamp).toLocaleTimeString()),
+                datasets: [{
+                    label: 'Temperature (°C)',
+                    data: measurements.map(m => m.temp),
+                    borderColor: 'rgb(255, 99, 132)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: false
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -11,13 +11,19 @@ services:
       - ./backend/fleet.db:/code/fleet.db
     networks:
       - fleet-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   device:
     build:
       context: .
       dockerfile: device/Dockerfile
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     environment:
       - BACKEND_URL=http://backend:8000
       - RUST_LOG=info

@@ -15,11 +15,11 @@ class FirmwareResponse(BaseModel):
 
 router = APIRouter()
 
-@router.get("/latest", response_model=Optional[FirmwareResponse])
+@router.get("/latest")
 def get_latest_firmware(device_id: str, db: Session = Depends(get_db)):
     device = db.query(models.Device).filter(models.Device.id == device_id).first()
     if not device:
-        raise HTTPException(status_code=404, detail="Device not found")
+        return Response(status_code=204)
         
     if device.desired_version:
         firmware = db.query(models.Firmware).filter(models.Firmware.version == device.desired_version).first()
@@ -31,7 +31,7 @@ def get_latest_firmware(device_id: str, db: Session = Depends(get_db)):
     if latest_firmware and latest_firmware.version != device.current_version:
          return FirmwareResponse(version=latest_firmware.version, checksum=latest_firmware.checksum, url=latest_firmware.url)
 
-    return None
+    return Response(status_code=204)
 
 @router.get("/binary/{firmware_id}")
 def download_firmware_binary(firmware_id: int, db: Session = Depends(get_db)):

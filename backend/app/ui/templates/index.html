@@ -5,6 +5,37 @@
     <link rel="stylesheet" href="/static/main.css">
 </head>
 <body>
+    <h1>Fleet Controls</h1>
+    <form id="fleet-controls-form">
+        <div class="control-group">
+            <label for="num_devices">Number of Devices:</label>
+            <input type="range" id="num_devices" name="num_devices" min="1" max="50" value="15">
+            <span id="num_devices_value">15</span>
+        </div>
+        <div class="control-group">
+            <label for="sample_interval_secs">Sample Interval (secs):</label>
+            <input type="range" id="sample_interval_secs" name="sample_interval_secs" min="1" max="60" value="10">
+            <span id="sample_interval_secs_value">10</span>
+        </div>
+        <div class="control-group">
+            <label for="upload_interval_secs">Upload Interval (secs):</label>
+            <input type="range" id="upload_interval_secs" name="upload_interval_secs" min="10" max="300" value="60">
+            <span id="upload_interval_secs_value">60</span>
+        </div>
+        <div class="control-group">
+            <label for="heartbeat_interval_secs">Heartbeat Interval (secs):</label>
+            <input type="range" id="heartbeat_interval_secs" name="heartbeat_interval_secs" min="10" max="300" value="30">
+            <span id="heartbeat_interval_secs_value">30</span>
+        </div>
+        <div class="control-group">
+            <label for="bg_color">Background Color:</label>
+            <input type="color" id="bg_color" name="bg_color" value="#ffffff">
+        </div>
+        <button type="submit">Update Fleet</button>
+    </form>
+
+    <hr>
+
     <h1>Device Fleet</h1>
     <table>
         <thead>
@@ -28,5 +59,66 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <script>
+        const numDevicesSlider = document.getElementById('num_devices');
+        const numDevicesValue = document.getElementById('num_devices_value');
+        numDevicesSlider.oninput = () => {
+            numDevicesValue.textContent = numDevicesSlider.value;
+        };
+
+        const sampleIntervalSlider = document.getElementById('sample_interval_secs');
+        const sampleIntervalValue = document.getElementById('sample_interval_secs_value');
+        sampleIntervalSlider.oninput = () => {
+            sampleIntervalValue.textContent = sampleIntervalSlider.value;
+        };
+
+        const uploadIntervalSlider = document.getElementById('upload_interval_secs');
+        const uploadIntervalValue = document.getElementById('upload_interval_secs_value');
+        uploadIntervalSlider.oninput = () => {
+            uploadIntervalValue.textContent = uploadIntervalSlider.value;
+        };
+
+        const heartbeatIntervalSlider = document.getElementById('heartbeat_interval_secs');
+        const heartbeatIntervalValue = document.getElementById('heartbeat_interval_secs_value');
+        heartbeatIntervalSlider.oninput = () => {
+            heartbeatIntervalValue.textContent = heartbeatIntervalSlider.value;
+        };
+
+        const bgColorPicker = document.getElementById('bg_color');
+        bgColorPicker.oninput = () => {
+            document.body.style.backgroundColor = bgColorPicker.value;
+        };
+
+        document.getElementById('fleet-controls-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Convert values to numbers
+            for (const key in data) {
+                if (key !== 'bg_color') {
+                    data[key] = parseInt(data[key], 10);
+                }
+            }
+
+            fetch('/api/fleet/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                alert('Fleet settings updated! Note that existing devices will only apply new settings on restart.');
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('Failed to update fleet settings.');
+            });
+        });
+    </script>
 </body>
 </html>
