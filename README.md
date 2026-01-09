@@ -10,6 +10,9 @@ This project creates a local "virtual fleet" of IoT devices that run as Docker c
 -   **FastAPI Backend:** A Python-based backend using FastAPI that receives and processes data from the devices.
 -   **Database Storage:** Uses SQLAlchemy and Alembic to store device information, firmware versions, and sensor measurements in a SQLite database.
 -   **OTA Update Simulation:** A mechanism to simulate A/B over-the-air firmware updates for the virtual devices.
+-   **Canary and Staged Rollouts:** Support for rolling out new firmware in stages, starting with a small subset of devices and gradually increasing the percentage of the fleet.
+-   **Blue/Green Deployments:** Ability to maintain separate "blue" (stable) and "green" (testing) environments for devices, allowing for isolated testing of new firmware releases.
+-   **Per-Segment Rollout Policies:** Flexibility to target firmware updates to specific device segments based on metadata like region or hardware revision.
 -   **Web UI:** A simple web dashboard built with Jinja2 templates to monitor the status and data of the device fleet.
 -   **Containerized with Docker:** The entire system is orchestrated with Docker Compose, making it easy to build, run, and scale.
 
@@ -95,6 +98,22 @@ The backend API is documented using OpenAPI (Swagger). You can explore and inter
 ### Command-Line Tools
 
 The `tools/` directory contains scripts for managing the system.
+
+-   **Control Rollouts:**
+    The `tools/rollout_control.py` script provides a command-line interface to manage firmware rollouts and device environments.
+
+    *   **Check Rollout Status:**
+        ```sh
+        python tools/rollout_control.py status
+        ```
+    *   **Set Rollout Percentage:**
+        ```sh
+        python tools/rollout_control.py set-phase <version> <percent>
+        ```
+    *   **Set Device Environment:**
+        ```sh
+        python tools/rollout_control.py set-environment <device-id> <environment>
+        ```
 
 -   **Generate Fake Firmware:**
     You can use `generate_fake_firmware.py` to create dummy firmware files for testing the OTA update functionality.
